@@ -7,11 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=ab0b38a71015d7deacc757b667e553c0013cd1e1f3139822bc28f4c708c9f905
+# scripts/chat_release.py sha256-utf8-lf=761686e005b7b29a89bb5afad6f50b1e04caf1bde63e9d2495b5f9c44b140749
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
-# web_mvp/offline_daily.py sha256-utf8-lf=6890427876009ab425446400307c8aaccbbc262f833c407930ebc134795996dd
+# web_mvp/offline_daily.py sha256-utf8-lf=0dc872de9bfa138b726bcc2866c2d874f25e85499171035b3377a59f677d6f54
 # web_mvp/offline_daily_html.py sha256-utf8-lf=b80a7dcf821558aaf2a7df1cbc9ef6993bff478ecf09eb1e3263a33e71967021
-# scripts/daily_report.py sha256-utf8-lf=c6714173809614f77b1852b6e8970d5f1b1fdec2eb18a6d3658cd4f80625df7e
+# web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
+# web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=c3c5e0331a7e6b133b89522121bec558ff5b74c837173ca5115c7a50a36a5a0f
+# scripts/daily_report.py sha256-utf8-lf=3aaded599199f6e516d0a7369c2e710240247d1d22e6bdc269496fcc98be1c50
 
 import os
 import time
@@ -82,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.1.0'
+DAILY_REPORT_VERSION = '1.2.0'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -177,6 +180,17 @@ import tempfile
 
 class DailyReportError(ArchiveError):
     pass
+
+class DailyReportCancelled(DailyReportError):
+    pass
+
+def _checkpoint(cancel):
+    if cancel and cancel():
+        raise DailyReportCancelled('已取消生成，未发布日报。')
+
+def _progress(callback, phase, **details):
+    if callback:
+        callback({'phase': phase, **details})
 REQUEST = re.compile('请(?:您|你|大家|各位)?(?:尽快|及时|务必|协助|帮忙|先)?(?:问|帮|确认|回复|提供|处理|安排|发|查|看|跟进)|麻烦|能否|是否|可以吗|什么时候|多少钱|进展(?:如何|怎么样)|跟进(?:一下|下)|[?？]', re.I)
 DEFER = re.compile('稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)')
 COMPLETION = re.compile('已(?:经)?(?:处理|完成|发送|发出|解决|确认|回复)|问题.{0,4}解决')
@@ -293,12 +307,16 @@ def _moment(value):
     except (ValueError, OverflowError):
         return None
 
-def _records(sources, start, end):
+def _records(sources, start, end, *, progress=None, cancel=None):
     records, duplicate_count, undated = ({}, 0, 0)
-    for source in sources:
+    for source_index, source in enumerate(sources, 1):
+        _checkpoint(cancel)
         digest, count = (hashlib.sha256(), 0)
         with (source['root'] / 'messages.jsonl').open('rb') as stream:
             for line_number, raw in enumerate(stream, 1):
+                if line_number % 500 == 1:
+                    _checkpoint(cancel)
+                    _progress(progress, 'reading', current=source_index, total=len(sources), messages=count)
                 digest.update(raw)
                 if not raw.strip():
                     continue
@@ -404,10 +422,10 @@ def _followups(records, my_names):
                 elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(_primary(later)):
                     reply, state = (later, 'withdrawal_signal')
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
-            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': request['senderName'], 'text': request['text'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': ('explicit_quote' if _quote_targets(reply, request) else 'direct_chronology') if reply else None, 'humanReviewRequired': True})
+            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': ('explicit_quote' if _quote_targets(reply, request) else 'direct_chronology') if reply else None, 'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
-def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=()):
+def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=(), progress=None, cancel=None):
     """Validate selected exports, aggregate one account, and publish a new report bundle."""
     if client not in {'wechat', 'wecom'}:
         raise DailyReportError('日报客户端无效。')
@@ -422,8 +440,15 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
     day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
     end = day_start + timedelta(days=1)
+    _checkpoint(cancel)
+    _progress(progress, 'checking')
     roots, limitations = _roots(export_roots)
-    sources = [_source(root, client) for root in roots]
+    sources = []
+    for index, root in enumerate(roots, 1):
+        _checkpoint(cancel)
+        _progress(progress, 'checking', current=index, total=len(roots))
+        sources.append(_source(root, client))
+        _checkpoint(cancel)
     if len({source['accountKey'] for source in sources}) != 1:
         raise DailyReportError('所选材料的账号标识不一致，请按同一账号分别生成日报。')
     destination = Path(output).expanduser().absolute()
@@ -437,7 +462,9 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
             raise DailyReportError('日报目录必须与原始数据和正式导出分开。')
     if destination.exists():
         raise DailyReportError('日报目录已存在，请选择新的目录。')
-    records, duplicates, undated = _records(sources, start, end)
+    records, duplicates, undated = _records(sources, start, end, progress=progress, cancel=cancel)
+    _checkpoint(cancel)
+    _progress(progress, 'organizing', messages=len(records))
     today = [row for row in records if row['time'] and day_start <= _moment(row['time']) < end]
     followups = _followups(records, tuple((name.strip() for name in my_names if name.strip())))
     hours = Counter((_moment(row['time']).hour for row in today))
@@ -458,12 +485,15 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     if undated:
         limitations.append(f'有 {undated} 条时间缺失或无效的消息，保留在证据中，未纳入当天统计和待跟进识别。')
     report = {'schemaVersion': 1, 'version': version, 'client': client, 'date': day, 'timezone': 'Asia/Shanghai', 'createdAt': datetime.now(BEIJING).isoformat(timespec='seconds'), 'accountKey': sources[0]['accountKey'], 'lookback': {'days': lookback_days, 'start': start.isoformat(), 'endExclusive': end.isoformat()}, 'overview': {'messages': len(today), 'activeConversations': len(conversations), 'selectedConversations': len({s['chat']['id'] for s in sources}), 'outgoing': directions['outgoing'] if all((source['selfId'] for source in sources)) else None, 'directionCounts': dict(directions), 'hourly': [hours[hour] for hour in range(24)], 'kinds': dict(Counter((row['kind'] for row in today))), 'messagesWithGaps': sum((bool(row['issues']) for row in today)), 'undatedMessages': undated, 'duplicateOccurrences': duplicates, 'personalFollowups': sum((item['target'] == 'self' and item['state'] not in {'completion_signal', 'withdrawal_signal'} for item in followups))}, 'conversations': conversations, 'followups': followups, 'topics': topics, 'riskClues': [{'evidenceId': row['evidenceId'], 'matches': sorted(set(URGENCY.findall(_primary(row))))} for row in today if row['direction'] != 'outgoing' and URGENCY.search(_primary(row))], 'sources': [{key: str(value) if key == 'root' else value for key, value in source.items()} for source in sources], 'limitations': list(dict.fromkeys(limitations)), 'unread': {'available': False}, 'evidenceFile': 'evidence.jsonl', 'diagnosticsFile': 'diagnostics.jsonl', 'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
+    _checkpoint(cancel)
+    _progress(progress, 'writing')
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.daily-report-', dir=destination.parent))
     try:
         (stage / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         with (stage / 'evidence.jsonl').open('w', encoding='utf-8') as stream:
             for row in records:
+                _checkpoint(cancel)
                 stream.write(json.dumps(row, ensure_ascii=False) + '\n')
         with (stage / 'diagnostics.jsonl').open('w', encoding='utf-8') as stream:
 
@@ -480,6 +510,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(stage.iterdir())]
         (stage / 'manifest.json').write_text(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'date': day, 'version': version, 'files': checksums}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        _checkpoint(cancel)
         publish_directory(stage, destination)
     finally:
         if stage.exists():
@@ -574,6 +605,854 @@ def render_report(report, records):
     kpis = [('当日消息', overview['messages']), ('活跃会话', overview['activeConversations']), ('本人发出', outgoing), ('本人相关待跟进', overview['personalFollowups']), ('信息待补充', overview['messagesWithGaps']), ('处理 / 取消待核对', sum((item['state'] in {'completion_signal', 'withdrawal_signal'} for item in report['followups'])))]
     metrics = ''.join(('<div class="metric"><span>' + name + '</span><strong>' + esc(value) + '</strong></div>' for name, value in kpis))
     return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">\n<title>' + esc(label + '每日消息整理 · ' + report['date']) + '</title><style>\n:root{--ink:#19343d;--muted:#657981;--line:#dbe5e6;--teal:#087c78;--paper:#fff;--bg:#f2f6f6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Microsoft YaHei","Segoe UI",sans-serif}a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#153b44;color:#e5f1ef;padding:32px 22px}aside strong{display:block;font-size:19px;letter-spacing:1px}aside p{font-size:12px;color:#a8c5c8}nav a{display:block;color:#d2e6e4;padding:10px 0}main{margin-left:210px;padding:35px 42px 70px;max-width:1600px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:2px}h1{font-size:31px;margin:5px 0}h2{font-size:20px;margin:0 0 18px}h3{font-size:16px;margin:10px 0}.muted,small{color:var(--muted);font-size:12px}.date{font-size:18px;font-weight:600;white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 16px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:27px;margin-top:6px}.notice{border-left:3px solid #d49a37;background:#fff8e9;padding:12px 16px;margin:20px 0 26px;font-size:13px}section{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:23px;scroll-margin-top:18px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:10px;margin-bottom:18px}input,select{font:inherit;font-size:13px;padding:9px 11px;border:1px solid #b9ccce;border-radius:6px;background:#fff;color:var(--ink)}input{min-width:0;flex:1}.clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.clue{border:1px solid var(--line);border-radius:10px;padding:17px;min-width:0}.clue-top,.clue-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.badge{font-size:11px;border-radius:4px;padding:3px 7px}.personal{background:#e4f3ef;color:#166855}.uncertain{background:#fff0d6;color:#91620c}.signal{background:#e8eef9;color:#465f91}.quote{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f8;border-radius:7px;padding:12px;font-size:13px}.clue-foot{color:var(--muted)}.evidence-link{font-size:12px;margin-left:8px}.chart{height:158px;display:flex;align-items:flex-end;gap:6px;min-width:530px}.chart-wrap,.table-wrap{overflow:auto}.hour{flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;min-width:15px}.hour i{display:block;width:80%;background:#409c96;border-radius:3px 3px 0 0}.hour span{font-size:10px;min-height:19px}.hour small{font-size:10px;margin-top:5px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic{background:#f4f8f8;padding:13px;border-radius:8px}.topic strong,.topic span{display:block}.topic span{color:var(--muted);font-size:12px}.risk-list{padding-left:20px}.risk-list p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:500}td small{display:block;overflow-wrap:anywhere}.path{max-width:380px;overflow-wrap:anywhere}.empty{color:var(--muted);background:#f5f8f8;padding:20px;border-radius:8px}.evidence{border-top:1px solid var(--line);padding:13px 0}.evidence:target{background:#fff8e5}.evidence summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}dl{font-size:12px}dt{color:var(--muted)}dd{margin-left:0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.limits{font-size:13px;padding-left:20px}.downloads{display:flex;gap:18px;font-size:13px;margin-top:18px}footer{margin-top:24px;font-size:12px;color:var(--muted)}[hidden]{display:none!important}\n@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}main{padding:28px}.two-col{grid-template-columns:1fr}}@media(max-width:720px){aside{position:static;width:auto;padding:20px}aside p{margin:3px 0}nav{display:flex;gap:18px;overflow:auto}nav a{white-space:nowrap;font-size:12px}main{margin:0;padding:20px 14px}header{display:block}.date{margin-top:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.clues{grid-template-columns:1fr}section{padding:17px}.controls{flex-direction:column}h1{font-size:27px}.topics{grid-template-columns:1fr}}\n@media print{aside,.controls{display:none}main{margin:0;padding:0}section,.clue{break-inside:avoid}.clues{display:block}.clue{margin-bottom:10px}body{background:#fff}}\n</style></head><body><aside><strong>本地消息 · 日报</strong><p>' + esc(label) + '</p><nav><a href="#overview">每日概览</a><a href="#followups">待跟进线索</a><a href="#conversations">会话分布</a><a href="#topics">主题与风险</a><a href="#evidence">查看原文</a><a href="#sources">统计范围</a></nav></aside><main>\n<header><div><div class="eyebrow">' + esc(label) + '</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">' + esc(report['date']) + '<div class="muted">北京时间</div></div></header>\n<div class="metrics" id="overview">' + metrics + '</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>\n<section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">' + bars + '</div></div></section>\n<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ' + str(report['lookback']['days']) + ' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索会话、原文或状态"><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="clues">' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>\n<section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '</tbody></table></div></section>\n<section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '</div><div><ul class="risk-list">' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '</ul></div></div></section>\n<section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '</section>\n<section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>' + source_rows + '</tbody></table></div><ul class="limits">' + limitations + '</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ' + esc(report['createdAt'][:16].replace('T', ' ')) + ' · 本页含聊天原文，分享前请核对范围。</footer></main>\n<script>\nconst search=document.getElementById(\'clue-search\'),filter=document.getElementById(\'clue-filter\'),cards=[...document.querySelectorAll(\'.clue\')];function apply(){const query=search.value.toLocaleLowerCase();let visible=0;for(const card of cards){card.hidden=!(card.textContent.toLocaleLowerCase().includes(query)&&(filter.value===\'all\'||card.dataset.group===filter.value));if(!card.hidden)visible++;}document.getElementById(\'clue-empty\').hidden=visible>0||cards.length===0;}search.addEventListener(\'input\',apply);filter.addEventListener(\'change\',apply);function reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName===\'DETAILS\')target.open=true;}window.addEventListener(\'hashchange\',reveal);for(const link of document.querySelectorAll(\'a[href^="#"]\')){link.addEventListener(\'click\',event=>{const target=document.getElementById(link.getAttribute(\'href\').slice(1));if(target){event.preventDefault();if(target.tagName===\'DETAILS\')target.open=true;target.scrollIntoView({behavior:\'smooth\',block:\'start\'});}});}reveal();\n</script></body></html>'
+
+def run_daily_desktop(client, options, version):
+    """Shared visual language for the native desktop surfaces.
+
+One place defines colour, type and spacing so the main window, the message
+browser, the date picker and the picture gallery read as a single product.
+Tk cannot round its built-in widgets, so cards are drawn as a one pixel frame
+around a flat surface and status chips are painted on a canvas.
+"""
+    import tkinter as tk
+    from tkinter import font as tkfont
+    from tkinter import ttk
+    CANVAS = '#F1F4F9'
+    SURFACE = '#FFFFFF'
+    SURFACE_SOFT = '#F7F9FC'
+    SURFACE_HOVER = '#EDF2F9'
+    BORDER = '#E1E7F0'
+    BORDER_STRONG = '#C7D2E1'
+    TEXT = '#111827'
+    TEXT_MUTED = '#5B6B82'
+    TEXT_FAINT = '#8D9AAC'
+    ACCENT = '#2563EB'
+    ACCENT_HOVER = '#1D4ED8'
+    ACCENT_SOFT = '#E8F0FF'
+    ACCENT_TEXT = '#1D4ED8'
+    SUCCESS = '#0E9F6E'
+    SUCCESS_SOFT = '#E4F7EF'
+    WARNING = '#B45309'
+    WARNING_SOFT = '#FDF3E3'
+    DANGER = '#DC2626'
+    DANGER_SOFT = '#FDECEC'
+    INFO = '#0E7490'
+    INFO_SOFT = '#E4F4F8'
+    FONT_FAMILY = 'Microsoft YaHei UI'
+    DISPLAY = (FONT_FAMILY, 12, 'bold')
+    TITLE = (FONT_FAMILY, 11, 'bold')
+    BODY = (FONT_FAMILY, 9)
+    BODY_BOLD = (FONT_FAMILY, 9, 'bold')
+    CAPTION = (FONT_FAMILY, 8)
+    CAPTION_BOLD = (FONT_FAMILY, 8, 'bold')
+    GAP_XS, GAP_SM, GAP_MD, GAP_LG = (4, 8, 12, 16)
+
+    def card(parent, *, border=BORDER, surface=SURFACE, padding=0):
+        """Return (outer, inner): a hairline bordered panel with a flat interior."""
+        outer = tk.Frame(parent, background=border)
+        inner = tk.Frame(outer, background=surface)
+        inner.pack(fill='both', expand=True, padx=1, pady=1)
+        if padding:
+            inner.configure(padx=padding)
+        return (outer, inner)
+
+    def rounded_rectangle(canvas, x1, y1, x2, y2, radius, **options):
+        """A rounded rectangle on a Tk canvas; Tk has no native rounded shape."""
+        points = [x1 + radius, y1, x2 - radius, y1, x2, y1, x2, y1 + radius, x2, y2 - radius, x2, y2, x2 - radius, y2, x1 + radius, y2, x1, y2, x1, y2 - radius, x1, y1 + radius, x1, y1]
+        return canvas.create_polygon(points, smooth=True, **options)
+
+    class StatusPill(tk.Canvas):
+        """A rounded status chip; Tk cannot round a ttk label."""
+        TONES = {'none': (TEXT_MUTED, '#EDF1F7'), 'pending': (WARNING, WARNING_SOFT), 'done': (SUCCESS, SUCCESS_SOFT), 'info': (INFO, INFO_SOFT), 'accent': (ACCENT_TEXT, ACCENT_SOFT), 'danger': (DANGER, DANGER_SOFT)}
+
+        def __init__(self, parent, *, text='', tone='none', font=BODY_BOLD, background=SURFACE, padx=9, pady=3):
+            self.font = font
+            self.background = background
+            self.padx, self.pady = (padx, pady)
+            self.tone = tone
+            self.text = text
+            self.metrics = tkfont.Font(root=parent, family=font[0], size=font[1], weight=font[2] if len(font) > 2 else 'normal')
+            super().__init__(parent, height=self.metrics.metrics('linespace') + pady * 2, width=self.metrics.measure(text) + padx * 2, highlightthickness=0, borderwidth=0, background=background)
+            self.bind('<Configure>', lambda _event: self.redraw())
+
+        def set(self, text, tone=None):
+            self.text = text
+            if tone is not None:
+                self.tone = tone
+            self.configure(width=self.metrics.measure(text) + self.padx * 2)
+            self.redraw()
+
+        def set_tone(self, tone):
+            self.tone = tone
+            self.redraw()
+
+        def redraw(self):
+            self.delete('all')
+            foreground, fill = self.TONES.get(self.tone, self.TONES['none'])
+            width = max(self.winfo_width(), self.metrics.measure(self.text) + self.padx * 2)
+            height = self.winfo_height()
+            rounded_rectangle(self, 1, 1, width - 1, height - 1, min(height // 2, 9), fill=fill, outline='')
+            self.create_text(width // 2, height // 2, text=self.text, fill=foreground, font=self.font)
+
+    class BrandMark(tk.Canvas):
+        """A rounded app mark drawn with the client initial."""
+
+        def __init__(self, parent, initial, *, size=30, background=CANVAS, fill=ACCENT):
+            super().__init__(parent, width=size, height=size, highlightthickness=0, borderwidth=0, background=background)
+            self.initial, self.fill, self.size = (initial, fill, size)
+            self.bind('<Configure>', lambda _event: self.redraw())
+
+        def redraw(self):
+            self.delete('all')
+            size = self.winfo_width() or self.size
+            rounded_rectangle(self, 0, 0, size - 1, size - 1, 8, fill=self.fill, outline='')
+            self.create_text(size // 2, size // 2 + 1, text=self.initial, fill='#FFFFFF', font=(FONT_FAMILY, 11, 'bold'))
+
+    class StatusDot(tk.Canvas):
+        """A small dot that shows whether the app is idle, working or finished."""
+        COLORS = {'idle': '#C3CEDD', 'busy': ACCENT, 'ok': SUCCESS, 'error': DANGER}
+
+        def __init__(self, parent, *, size=9, background=SURFACE):
+            super().__init__(parent, width=size, height=size, highlightthickness=0, borderwidth=0, background=background)
+            self.size = size
+            self.state = 'idle'
+            self.bind('<Configure>', lambda _event: self.redraw())
+            self.redraw()
+
+        def set_state(self, state):
+            self.state = state
+            self.redraw()
+
+        def redraw(self):
+            self.delete('all')
+            size = self.winfo_width() or self.size
+            self.create_oval(1, 1, size - 1, size - 1, fill=self.COLORS.get(self.state, self.COLORS['idle']), outline='')
+
+    class SearchGlyph(tk.Canvas):
+        """A drawn magnifier; the CJK UI font has no dependable search glyph."""
+
+        def __init__(self, parent, *, size=13, color=TEXT_FAINT, background=SURFACE):
+            super().__init__(parent, width=size, height=size, highlightthickness=0, borderwidth=0, background=background)
+            self.size, self.color = (size, color)
+            self.bind('<Configure>', lambda _event: self.redraw())
+
+        def redraw(self):
+            self.delete('all')
+            size = self.winfo_width() or self.size
+            radius = size * 0.34
+            self.create_oval(size * 0.12, size * 0.12, size * 0.12 + radius * 2, size * 0.12 + radius * 2, outline=self.color, width=1)
+            self.create_line(size * 0.12 + radius * 1.5, size * 0.12 + radius * 1.5, size - 1, size - 1, fill=self.color, width=1)
+
+    def _without_arrow(element):
+        """Remove the clam menubutton arrow so the label can carry its own caret."""
+        name, options = element
+        if name in ('Menubutton.indicator', 'Menubutton.downarrow'):
+            return None
+        children = options.get('children')
+        if children:
+            kept = [item for item in (_without_arrow(child) for child in children) if item is not None]
+            options = dict(options, children=kept)
+        return (name, options)
+
+    def _scrollbar(style, name):
+        """Keep the native arrows and thumb with a usable minimum thickness."""
+        style.configure(name, troughcolor='#E9EEF5', background='#C2CEDD', bordercolor='#E9EEF5', lightcolor='#C2CEDD', darkcolor='#C2CEDD', arrowcolor=TEXT_MUTED, arrowsize=14, borderwidth=1, width=14)
+
+    def apply_theme(root):
+        """Install the visual language on a Tk root and return the ttk style."""
+        style = ttk.Style(root)
+        if 'clam' in style.theme_names():
+            style.theme_use('clam')
+        root.configure(background=CANVAS)
+        root.option_add('*Font', BODY)
+        root.option_add('*TCombobox*Listbox.background', SURFACE)
+        root.option_add('*TCombobox*Listbox.foreground', TEXT)
+        root.option_add('*TCombobox*Listbox.selectBackground', ACCENT_SOFT)
+        root.option_add('*TCombobox*Listbox.selectForeground', TEXT)
+        root.option_add('*TCombobox*Listbox.font', BODY)
+        style.configure('.', background=CANVAS, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, focuscolor=BORDER_STRONG, fieldbackground=SURFACE)
+        style.configure('TButton', background=SURFACE, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, relief='solid', padding=(9, 4), focuscolor=BORDER_STRONG, width=0)
+        style.map('TButton', background=[('disabled', SURFACE_SOFT), ('pressed', '#E4EBF5'), ('active', SURFACE_HOVER)], foreground=[('disabled', '#AEB9C8')], bordercolor=[('disabled', '#EDF1F6'), ('active', BORDER_STRONG)], lightcolor=[('disabled', '#EDF1F6'), ('active', BORDER_STRONG)], darkcolor=[('disabled', '#EDF1F6'), ('active', BORDER_STRONG)])
+        style.configure('TMenubutton', background=SURFACE, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, relief='solid', padding=(10, 4), arrowcolor=TEXT_MUTED, arrowsize=9, arrowpadding=0, focuscolor=BORDER_STRONG, width=0)
+        style.map('TMenubutton', background=[('disabled', SURFACE_SOFT), ('pressed', '#E4EBF5'), ('active', SURFACE_HOVER)], foreground=[('disabled', '#AEB9C8')], bordercolor=[('disabled', '#EDF1F6'), ('active', BORDER_STRONG)])
+        style.layout('TMenubutton', [item for item in (_without_arrow(element) for element in style.layout('TMenubutton')) if item is not None])
+        style.configure('Accent.TButton', background=ACCENT, foreground='#FFFFFF', font=BODY_BOLD, bordercolor=ACCENT, lightcolor=ACCENT, darkcolor=ACCENT, borderwidth=1, relief='solid', padding=(11, 4), focuscolor=ACCENT, width=0)
+        style.map('Accent.TButton', background=[('disabled', '#C3D3F2'), ('pressed', '#1B45BE'), ('active', ACCENT_HOVER)], foreground=[('disabled', '#F0F4FE')], bordercolor=[('disabled', '#C3D3F2'), ('active', ACCENT_HOVER)], lightcolor=[('disabled', '#C3D3F2'), ('active', ACCENT_HOVER)], darkcolor=[('disabled', '#C3D3F2'), ('active', ACCENT_HOVER)])
+        style.configure('Quiet.TButton', background=SURFACE, foreground=TEXT_MUTED, font=BODY, bordercolor=SURFACE, lightcolor=SURFACE, darkcolor=SURFACE, borderwidth=0, relief='flat', padding=(4, 2), focuscolor=SURFACE, width=0)
+        style.map('Quiet.TButton', background=[('disabled', SURFACE), ('pressed', SURFACE_HOVER), ('active', SURFACE_HOVER)], foreground=[('disabled', '#B4BFCE'), ('active', TEXT)], bordercolor=[('disabled', SURFACE), ('active', SURFACE)], lightcolor=[('disabled', SURFACE), ('active', SURFACE)], darkcolor=[('disabled', SURFACE), ('active', SURFACE)])
+        style.configure('Day.TButton', background=SURFACE, foreground=TEXT, font=BODY, bordercolor=SURFACE, lightcolor=SURFACE, darkcolor=SURFACE, borderwidth=0, relief='flat', padding=(6, 4), focuscolor=SURFACE, width=0)
+        style.map('Day.TButton', background=[('pressed', ACCENT_SOFT), ('active', SURFACE_HOVER)], foreground=[('active', ACCENT_TEXT)], bordercolor=[('disabled', SURFACE), ('active', SURFACE)], lightcolor=[('disabled', SURFACE), ('active', SURFACE)], darkcolor=[('disabled', SURFACE), ('active', SURFACE)])
+        style.configure('Tool.TButton', background=SURFACE, foreground=TEXT_MUTED, font=BODY, bordercolor=SURFACE, lightcolor=SURFACE, darkcolor=SURFACE, borderwidth=0, relief='flat', padding=(6, 3), focuscolor=BORDER_STRONG, width=0)
+        style.map('Tool.TButton', background=[('disabled', SURFACE), ('pressed', SURFACE_HOVER), ('active', SURFACE_HOVER)], foreground=[('disabled', '#B4BFCE'), ('active', ACCENT_TEXT)], bordercolor=[('disabled', SURFACE), ('active', SURFACE)], lightcolor=[('disabled', SURFACE), ('active', SURFACE)], darkcolor=[('disabled', SURFACE), ('active', SURFACE)])
+        style.configure('Ghost.TButton', background=CANVAS, foreground=TEXT_MUTED, font=BODY, bordercolor=CANVAS, lightcolor=CANVAS, darkcolor=CANVAS, borderwidth=1, relief='solid', padding=(8, 3), focuscolor=BORDER_STRONG, width=0)
+        style.map('Ghost.TButton', background=[('disabled', CANVAS), ('pressed', '#E4EBF5'), ('active', SURFACE_HOVER)], foreground=[('disabled', '#B4BFCE'), ('active', TEXT)], bordercolor=[('disabled', CANVAS), ('active', BORDER)], lightcolor=[('disabled', CANVAS), ('active', BORDER)], darkcolor=[('disabled', CANVAS), ('active', BORDER)])
+        style.configure('TEntry', fieldbackground=SURFACE, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, padding=(6, 4), insertcolor=TEXT)
+        style.map('TEntry', bordercolor=[('focus', BORDER_STRONG)], lightcolor=[('focus', BORDER_STRONG)], darkcolor=[('focus', BORDER_STRONG)], fieldbackground=[('readonly', SURFACE_SOFT), ('disabled', SURFACE_SOFT)], foreground=[('disabled', TEXT_FAINT)])
+        style.configure('TCombobox', fieldbackground=SURFACE, background=SURFACE, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, padding=(6, 4), arrowcolor=TEXT_MUTED, arrowsize=12, selectbackground=SURFACE, selectforeground=TEXT)
+        style.map('TCombobox', fieldbackground=[('readonly', SURFACE), ('disabled', SURFACE_SOFT)], foreground=[('disabled', TEXT_FAINT)], bordercolor=[('focus', BORDER_STRONG), ('hover', BORDER_STRONG)], lightcolor=[('focus', BORDER_STRONG), ('hover', BORDER_STRONG)], darkcolor=[('focus', BORDER_STRONG), ('hover', BORDER_STRONG)], arrowcolor=[('disabled', '#B4BFCE'), ('hover', ACCENT)])
+        style.configure('TSpinbox', fieldbackground=SURFACE, foreground=TEXT, font=BODY, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, padding=(4, 3), arrowcolor=TEXT_MUTED, arrowsize=10)
+        style.map('TSpinbox', bordercolor=[('focus', BORDER_STRONG)], lightcolor=[('focus', BORDER_STRONG)], darkcolor=[('focus', BORDER_STRONG)])
+        style.configure('Quiet.TEntry', fieldbackground=SURFACE, foreground=TEXT_MUTED, font=CAPTION, bordercolor=SURFACE, lightcolor=SURFACE, darkcolor=SURFACE, borderwidth=0, padding=(2, 2), insertcolor=TEXT)
+        style.map('Quiet.TEntry', bordercolor=[('focus', BORDER_STRONG)], lightcolor=[('focus', BORDER_STRONG)], darkcolor=[('focus', BORDER_STRONG)], fieldbackground=[('readonly', SURFACE), ('disabled', SURFACE)], foreground=[('disabled', TEXT_FAINT)])
+        style.configure('TCheckbutton', background=SURFACE, foreground=TEXT, font=BODY, focuscolor=SURFACE, indicatorcolor=SURFACE, indicatorbackground=SURFACE)
+        style.map('TCheckbutton', background=[('active', SURFACE)], indicatorcolor=[('selected', ACCENT), ('disabled', '#E4E9F1')], foreground=[('disabled', TEXT_FAINT)])
+        style.configure('TNotebook', background=CANVAS, borderwidth=0, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, tabmargins=(0, 0, 0, 0))
+        style.configure('TNotebook.Tab', background=SURFACE_SOFT, foreground=TEXT_MUTED, font=BODY, borderwidth=0, padding=(16, 7), focuscolor=SURFACE_SOFT)
+        style.map('TNotebook.Tab', background=[('selected', SURFACE), ('active', '#EEF3FA')], foreground=[('selected', TEXT), ('active', TEXT)], expand=[('selected', (1, 1, 1, 0))])
+        style.configure('TLabelFrame', background=SURFACE, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, borderwidth=1, relief='solid', font=BODY, padding=8)
+        style.configure('TLabelFrame.Label', background=SURFACE, foreground=TEXT_MUTED, font=CAPTION_BOLD)
+        _scrollbar(style, 'Vertical.TScrollbar')
+        _scrollbar(style, 'Horizontal.TScrollbar')
+        style.configure('Treeview', background=SURFACE, fieldbackground=SURFACE, foreground=TEXT, font=BODY, borderwidth=0, bordercolor=BORDER, lightcolor=SURFACE, darkcolor=SURFACE, relief='flat', rowheight=26)
+        style.map('Treeview', background=[('selected', ACCENT_SOFT)], foreground=[('selected', ACCENT_TEXT)])
+        style.configure('Treeview.Heading', background=SURFACE_SOFT, foreground=TEXT_MUTED, font=CAPTION_BOLD, borderwidth=0, relief='flat', padding=(8, 7), lightcolor=SURFACE_SOFT, darkcolor=SURFACE_SOFT)
+        style.map('Treeview.Heading', background=[('active', '#E9EFF7')], foreground=[('active', TEXT)])
+        style.configure('Horizontal.TProgressbar', background=ACCENT, troughcolor='#E4EAF3', bordercolor='#E4EAF3', lightcolor=ACCENT, darkcolor=ACCENT, thickness=4, borderwidth=0)
+        style.configure('Vertical.TProgressbar', background=ACCENT, troughcolor='#E4EAF3', bordercolor='#E4EAF3', lightcolor=ACCENT, darkcolor=ACCENT, thickness=4, borderwidth=0)
+        style.configure('TSeparator', background=BORDER)
+        style.configure('Surface.TFrame', background=SURFACE)
+        style.configure('Title.TLabel', font=DISPLAY, foreground=TEXT, background=CANVAS)
+        style.configure('Heading.TLabel', font=TITLE, foreground=TEXT, background=SURFACE)
+        style.configure('Section.TLabel', font=CAPTION_BOLD, foreground=TEXT_MUTED, background=SURFACE)
+        style.configure('Sub.TLabel', font=CAPTION, foreground=TEXT_MUTED, background=CANVAS)
+        style.configure('Hint.TLabel', font=CAPTION, foreground=TEXT_FAINT, background=SURFACE)
+        style.configure('Status.TLabel', font=BODY, foreground=TEXT, background=CANVAS)
+        style.configure('ReviewPending.TLabel', foreground=WARNING, font=BODY_BOLD)
+        style.configure('ReviewDone.TLabel', foreground=SUCCESS, font=BODY_BOLD)
+        style.configure('ReviewNone.TLabel', foreground=TEXT_MUTED, font=BODY_BOLD)
+        style.configure('Completion.TFrame', background=INFO_SOFT)
+        style.configure('Completion.TLabel', background=INFO_SOFT, foreground='#0B5C73', font=BODY_BOLD)
+        style.configure('CompletionDetail.TLabel', background=INFO_SOFT, foreground='#3C7F92', font=CAPTION)
+        return style
+    "Small native date picker; only Python's bundled calendar and Tk are used."
+    import calendar
+    from datetime import date
+    import tkinter as tk
+    from tkinter import ttk
+
+    class DatePicker(tk.Toplevel):
+
+        def __init__(self, parent, variable, title='选择日期'):
+            super().__init__(parent)
+            self.variable = variable
+            self.title(title)
+            self.transient(parent)
+            self.resizable(False, False)
+            self.configure(background=CANVAS)
+            apply_theme(self)
+            try:
+                selected = date.fromisoformat(variable.get())
+            except ValueError:
+                selected = date.today()
+            self.year, self.month = (selected.year, selected.month)
+            self.selected = selected
+            head = tk.Frame(self, background=SURFACE)
+            head.pack(fill='x')
+            self.caption = tk.Label(head, text='', font=('Microsoft YaHei UI', 11, 'bold'), background=SURFACE, foreground=TEXT)
+            self.caption.pack(side='left', padx=16, pady=12)
+            ttk.Button(head, text='›', width=3, style='Quiet.TButton', command=lambda: self.move(1)).pack(side='right', padx=(0, 8), pady=10)
+            ttk.Button(head, text='‹', width=3, style='Quiet.TButton', command=lambda: self.move(-1)).pack(side='right', padx=(0, 4), pady=10)
+            body = tk.Frame(self, background=SURFACE)
+            body.pack(fill='both', expand=True)
+            jump = tk.Frame(body, background=SURFACE)
+            jump.pack(fill='x', padx=16, pady=(2, 8))
+            self.year_value = tk.StringVar(value=str(self.year))
+            self.month_value = tk.StringVar(value=str(self.month))
+            tk.Label(jump, text='跳转', font=CAPTION, background=SURFACE, foreground=TEXT_FAINT).pack(side='left', padx=(0, 8))
+            ttk.Spinbox(jump, from_=1, to=9999, width=6, textvariable=self.year_value).pack(side='left')
+            tk.Label(jump, text='年', font=CAPTION, background=SURFACE, foreground=TEXT_MUTED).pack(side='left', padx=4)
+            ttk.Combobox(jump, values=tuple(map(str, range(1, 13))), width=4, state='readonly', textvariable=self.month_value).pack(side='left')
+            tk.Label(jump, text='月', font=CAPTION, background=SURFACE, foreground=TEXT_MUTED).pack(side='left', padx=4)
+            ttk.Button(jump, text='前往', command=self.jump).pack(side='right')
+            self.days = tk.Frame(body, background=SURFACE)
+            self.days.pack(padx=14, pady=(0, 8))
+            for column, label in enumerate('一二三四五六日'):
+                tk.Label(self.days, text=label, font=CAPTION, background=SURFACE, foreground=TEXT_FAINT, width=4, anchor='center').grid(row=0, column=column, padx=2, pady=(0, 4))
+            self.draw()
+            tk.Frame(self, background=BORDER, height=1).pack(fill='x', side='bottom')
+            bottom = tk.Frame(self, background=SURFACE)
+            bottom.pack(fill='x', side='bottom', padx=14, pady=(0, 12))
+            ttk.Button(bottom, text='今天', command=lambda: self.choose(date.today())).pack(side='left')
+            ttk.Button(bottom, text='清空日期', command=lambda: self.choose(None)).pack(side='left', padx=8)
+            ttk.Button(bottom, text='取消', command=self.destroy).pack(side='right')
+            self.bind('<Escape>', lambda _event: self.destroy())
+            self.update_idletasks()
+            self.geometry(f'+{parent.winfo_rootx() + 80}+{parent.winfo_rooty() + 80}')
+            self.grab_set()
+
+        def move(self, step):
+            ordinal = self.year * 12 + self.month - 1 + step
+            year, month = divmod(ordinal, 12)
+            if 1 <= year <= 9999:
+                self.year, self.month = (year, month + 1)
+                self.draw()
+
+        def draw(self):
+            self.caption.configure(text=f'{self.year}年 {self.month}月')
+            self.year_value.set(str(self.year))
+            self.month_value.set(str(self.month))
+            for child in self.days.winfo_children()[7:]:
+                child.destroy()
+            for row, week in enumerate(calendar.monthcalendar(self.year, self.month), 1):
+                for column, day in enumerate(week):
+                    if day:
+                        current = date(self.year, self.month, day)
+                        chosen = current == self.selected
+                        ttk.Button(self.days, text=str(day), width=4, style='Accent.TButton' if chosen else 'Day.TButton', command=lambda day=day: self.choose(date(self.year, self.month, day))).grid(row=row, column=column, padx=2, pady=2)
+
+        def jump(self):
+            try:
+                target = date(int(self.year_value.get()), int(self.month_value.get()), 1)
+            except ValueError:
+                return
+            self.year, self.month = (target.year, target.month)
+            self.draw()
+
+        def choose(self, value):
+            self.variable.set(value.isoformat() if value else '')
+            self.destroy()
+    'Native daily-report desktop; worker threads never call Tk widgets.'
+    from datetime import datetime, timedelta
+    import json
+    import os
+    from pathlib import Path
+    import queue
+    import re
+    import threading
+    import traceback
+    import webbrowser
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+
+    class DailyReportApp:
+
+        def __init__(self, root, client, version, *, options=None, settings_directory=None, builder=build_daily_report, opener=None):
+            self.root, self.client, self.version = (root, client, version)
+            self.label = '个微' if client == 'wechat' else '企微'
+            self.builder, self.opener = (builder, opener or self._open_path)
+            base = Path(os.environ.get('LOCALAPPDATA') or Path.home() / '.local' / 'share')
+            self.settings_directory = Path(settings_directory) if settings_directory else base / 'LocalChatDailyReports' / client
+            self.log_path = self.settings_directory / 'desktop.log'
+            self.events, self.cancel_event = (queue.Queue(), threading.Event())
+            self.busy, self.closing, self.closed = (False, False, False)
+            self.result, self.followups, self.roots, self.controls = (None, [], [], [])
+            self.today = datetime.now(BEIJING).date()
+            self.date = tk.StringVar(root, value=self.today.isoformat())
+            self.lookback = tk.StringVar(root, value='7')
+            self.output_parent = tk.StringVar(root, value=str(Path.home() / 'Documents' / 'LocalChatDailyReports'))
+            self.names = tk.StringVar(root)
+            self.auto_open = tk.BooleanVar(root, value=True)
+            self.status = tk.StringVar(root, value='添加已复核的导出目录，选择日期后生成日报。')
+            self.source_count = tk.StringVar(root, value='尚未添加导出')
+            self.search = tk.StringVar(root)
+            self.filter = tk.StringVar(root, value='全部线索')
+            self.result_note = tk.StringVar(root, value='生成后可在这里查看概览、筛选线索，并打开完整 HTML 日报。')
+            self.result_count = tk.StringVar(root, value='')
+            self.metrics = [tk.StringVar(root, value='—') for _ in range(4)]
+            self._load_settings()
+            if options:
+                if options.date:
+                    self.date.set(options.date)
+                if options.export_root:
+                    self.roots = []
+                    for path in options.export_root:
+                        self._add_path(path)
+                if options.my_name:
+                    self.names.set('，'.join(options.my_name))
+                if options.lookback_days is not None:
+                    self.lookback.set(str(options.lookback_days))
+                if options.output:
+                    self.output_parent.set(str(options.output.parent))
+            self._build()
+            self._refresh_roots()
+            root.protocol('WM_DELETE_WINDOW', self.close)
+            root.bind('<Control-Return>', lambda _event: self.generate())
+            self.poll_id = root.after(80, self.drain_events)
+
+        def _text(self, parent, text, *, font=BODY, color=TEXT_MUTED, **packing):
+            label = tk.Label(parent, text=text, font=font, background=SURFACE, foreground=color, anchor='w', justify='left')
+            label.pack(**packing)
+            return label
+
+        def _button(self, parent, text, command, *, editing=False, **kwargs):
+            button = ttk.Button(parent, text=text, command=command, **kwargs)
+            if editing:
+                self.controls.append(button)
+            return button
+
+        def _build(self):
+            root = self.root
+            root.title(self.label + '本地消息日报 · ' + self.version)
+            root.geometry('1100x760')
+            root.minsize(900, 650)
+            root.columnconfigure(0, weight=1)
+            root.rowconfigure(1, weight=1)
+            apply_theme(root)
+            header = tk.Frame(root, background=CANVAS)
+            header.grid(row=0, column=0, sticky='ew', padx=20, pady=(16, 10))
+            tk.Label(header, text=self.label + ' · 每日消息工作台', font=DISPLAY, background=CANVAS, foreground=TEXT).pack(side='left')
+            tk.Label(header, text='概览  /  待跟进  /  HTML 日报', font=CAPTION, background=CANVAS, foreground=TEXT_MUTED).pack(side='right')
+            self.tabs = ttk.Notebook(root)
+            self.tabs.grid(row=1, column=0, sticky='nsew', padx=20)
+            self.prepare = tk.Frame(self.tabs, background=CANVAS)
+            self.results = tk.Frame(self.tabs, background=SURFACE)
+            self.tabs.add(self.prepare, text='  准备日报  ')
+            self.tabs.add(self.results, text='  概览与待跟进  ')
+            self.prepare.columnconfigure(0, weight=1, minsize=320)
+            self.prepare.columnconfigure(1, weight=1, minsize=370)
+            self.prepare.rowconfigure(0, weight=1)
+            self._build_sources()
+            self._build_settings()
+            self._build_results()
+            footer = tk.Frame(root, background=CANVAS)
+            footer.grid(row=2, column=0, sticky='ew', padx=20, pady=(10, 14))
+            footer.columnconfigure(0, weight=1)
+            self.status_label = tk.Label(footer, textvariable=self.status, font=BODY, background=CANVAS, foreground=TEXT, anchor='w', justify='left', wraplength=590)
+            self.status_label.grid(row=0, column=0, sticky='ew', padx=(0, 12))
+            self.generate_button = self._button(footer, '生成日报', self.generate, style='Accent.TButton')
+            self.generate_button.grid(row=0, column=1, padx=4)
+            self.cancel_button = self._button(footer, '取消生成', self.cancel, state='disabled')
+            self.cancel_button.grid(row=0, column=2, padx=4)
+            self.progress = ttk.Progressbar(footer, mode='indeterminate')
+            self.progress.grid(row=1, column=0, columnspan=3, sticky='ew', pady=(9, 6))
+            tools = tk.Frame(footer, background=CANVAS)
+            tools.grid(row=2, column=0, columnspan=3, sticky='ew')
+            self.open_report_button = self._button(tools, '打开 HTML 日报', lambda: self.open_result('htmlFile'), state='disabled')
+            self.open_report_button.pack(side='left')
+            self.folder_button = self._button(tools, '打开结果目录', lambda: self.open_result('output'), state='disabled')
+            self.folder_button.pack(side='left', padx=8)
+            self.copy_button = self._button(tools, '复制结果路径', self.copy_result, state='disabled')
+            self.copy_button.pack(side='left')
+            self._button(tools, '排查日志', self.open_log, style='Quiet.TButton').pack(side='right')
+
+        def _build_sources(self):
+            outer, body = card(self.prepare)
+            outer.grid(row=0, column=0, sticky='nsew', pady=(10, 0), padx=(0, 10))
+            self._text(body, '1  选择消息材料', font=DISPLAY, color=TEXT, fill='x', padx=14, pady=(14, 8))
+            self._text(body, '添加原助手已复核的正式导出或批次目录。\n可合并同一账号的私聊与群聊。', fill='x', padx=14)
+            bar = tk.Frame(body, background=SURFACE)
+            bar.pack(fill='x', padx=14, pady=12)
+            self._button(bar, '添加目录…', self.choose_source, editing=True).pack(side='left')
+            self._button(bar, '移除选中', self.remove_sources, editing=True).pack(side='left', padx=6)
+            self._button(bar, '清空', self.clear_sources, editing=True).pack(side='left')
+            frame = tk.Frame(body, background=SURFACE)
+            frame.pack(fill='both', expand=True, padx=14)
+            frame.columnconfigure(0, weight=1)
+            frame.rowconfigure(0, weight=1)
+            self.source_list = tk.Listbox(frame, selectmode='extended', exportselection=False, font=BODY, background=SURFACE, foreground=TEXT, borderwidth=0, highlightthickness=1, highlightbackground=BORDER, activestyle='none', height=6)
+            self.source_list.grid(row=0, column=0, sticky='nsew')
+            vertical = ttk.Scrollbar(frame, orient='vertical', command=self.source_list.yview)
+            vertical.grid(row=0, column=1, sticky='ns')
+            horizontal = ttk.Scrollbar(frame, orient='horizontal', command=self.source_list.xview)
+            horizontal.grid(row=1, column=0, sticky='ew')
+            self.source_list.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+            self.source_list.bind('<Delete>', lambda _event: self.remove_sources())
+            ttk.Label(body, textvariable=self.source_count, style='Hint.TLabel').pack(fill='x', padx=14, pady=(10, 5))
+            self._text(body, '生成时核对复核状态及文件完整性。', font=CAPTION, fill='x', padx=14, pady=(0, 14))
+
+        def _build_settings(self):
+            outer, body = card(self.prepare)
+            outer.grid(row=0, column=1, sticky='nsew', pady=(10, 0))
+            canvas = tk.Canvas(body, background=SURFACE, highlightthickness=0, width=370)
+            scrollbar = ttk.Scrollbar(body, orient='vertical', command=canvas.yview)
+            scrollbar.pack(side='right', fill='y')
+            canvas.pack(side='left', fill='both', expand=True)
+            canvas.configure(yscrollcommand=scrollbar.set)
+            self.settings_body = form = tk.Frame(canvas, background=SURFACE, padx=14)
+            window = canvas.create_window(0, 0, window=form, anchor='nw')
+            form.bind('<Configure>', lambda _event: canvas.configure(scrollregion=canvas.bbox('all')))
+            canvas.bind('<Configure>', lambda event: canvas.itemconfigure(window, width=event.width))
+
+            def wheel(event):
+                canvas.yview_scroll(-int(event.delta / 120), 'units')
+                return 'break'
+            self._text(form, '2  设置日报', font=DISPLAY, color=TEXT, fill='x', pady=(14, 10))
+            self._text(form, '日报日期 · 北京时间', fill='x', pady=(0, 6))
+            row = tk.Frame(form, background=SURFACE)
+            row.pack(fill='x')
+            field = ttk.Entry(row, textvariable=self.date, width=13)
+            field.pack(side='left', fill='x', expand=True)
+            self.controls.append(field)
+            self._button(row, '日历', self.pick_date, editing=True).pack(side='left', padx=(6, 0))
+            for text, offset in (('今天', 0), ('昨天', 1)):
+                self._button(row, text, lambda n=offset: self.date.set((datetime.now(BEIJING).date() - timedelta(days=n)).isoformat()), editing=True).pack(side='left', padx=(4, 0))
+            self._text(form, '待跟进回看 · 含当天，1～90 天', fill='x', pady=(14, 6))
+            spin = ttk.Spinbox(form, from_=1, to=90, textvariable=self.lookback, width=7)
+            spin.pack(anchor='w')
+            self.controls.append(spin)
+            self._text(form, '结果保存位置', fill='x', pady=(14, 6))
+            row = tk.Frame(form, background=SURFACE)
+            row.pack(fill='x')
+            field = ttk.Entry(row, textvariable=self.output_parent)
+            field.pack(side='left', fill='x', expand=True)
+            self.controls.append(field)
+            self._button(row, '浏览…', self.choose_output, editing=True).pack(side='left', padx=(6, 0))
+            self._text(form, '每次自动新建日期目录，保留已有日报。', font=CAPTION, fill='x', pady=(5, 0))
+            self._text(form, '群内本人称呼 · 可选，用逗号分隔', fill='x', pady=(14, 6))
+            field = ttk.Entry(form, textvariable=self.names)
+            field.pack(fill='x')
+            self.controls.append(field)
+            checkbox = ttk.Checkbutton(form, text='完成后自动打开 HTML 日报', variable=self.auto_open)
+            checkbox.pack(anchor='w', pady=(16, 12))
+            self.controls.append(checkbox)
+            self._text(form, '只整理选定导出；待跟进线索需人工核对。\n生成期间可以取消，所填内容会保留。', font=CAPTION, fill='x', pady=(0, 14))
+
+            def bind_wheel(widget):
+                widget.bind('<MouseWheel>', wheel)
+                for child in widget.winfo_children():
+                    bind_wheel(child)
+            bind_wheel(form)
+
+        def _build_results(self):
+            self.results.columnconfigure(0, weight=1)
+            self.results.rowconfigure(3, weight=1)
+            metrics = tk.Frame(self.results, background=SURFACE)
+            metrics.grid(row=0, column=0, sticky='ew', padx=14, pady=14)
+            for index, title in enumerate(('当天消息', '活跃会话', '本人相关待跟进', '信息待补充')):
+                metrics.columnconfigure(index, weight=1, uniform='metric')
+                outer, body = card(metrics)
+                outer.grid(row=0, column=index, sticky='ew', padx=(0 if index == 0 else 7, 0))
+                tk.Label(body, textvariable=self.metrics[index], background=SURFACE, foreground=ACCENT, font=('Microsoft YaHei UI', 20, 'bold')).pack(anchor='w', padx=12, pady=(8, 2))
+                self._text(body, title, font=CAPTION, fill='x', padx=12, pady=(0, 10))
+            ttk.Label(self.results, textvariable=self.result_note, style='Hint.TLabel', wraplength=850).grid(row=1, column=0, sticky='ew', padx=14)
+            bar = tk.Frame(self.results, background=SURFACE)
+            bar.grid(row=2, column=0, sticky='ew', padx=14, pady=10)
+            ttk.Label(bar, text='搜索线索', style='Section.TLabel').pack(side='left')
+            self.search_entry = ttk.Entry(bar, textvariable=self.search)
+            self.search_entry.pack(side='left', fill='x', expand=True, padx=8)
+            self.filter_box = ttk.Combobox(bar, textvariable=self.filter, state='readonly', width=17, values=('全部线索', '本人相关待跟进', '对象或身份待确认', '处理信号待核对'))
+            self.filter_box.pack(side='left')
+            self._button(bar, '清除筛选', self.clear_filters).pack(side='left', padx=(8, 0))
+            self.search.trace_add('write', lambda *_: self.filter_followups())
+            self.filter.trace_add('write', lambda *_: self.filter_followups())
+            frame = tk.Frame(self.results, background=SURFACE)
+            frame.grid(row=3, column=0, sticky='nsew', padx=14)
+            frame.columnconfigure(0, weight=1)
+            frame.rowconfigure(0, weight=1)
+            columns = ('conversation', 'sender', 'time', 'state', 'request')
+            self.followup_tree = ttk.Treeview(frame, columns=columns, show='headings', height=5, selectmode='browse')
+            for name, title, width in zip(columns, ('会话', '发起人', '时间', '当前进展', '请求内容'), (145, 100, 130, 240, 330)):
+                self.followup_tree.heading(name, text=title)
+                self.followup_tree.column(name, width=width, minwidth=width, stretch=name == 'request')
+            self.followup_tree.grid(row=0, column=0, sticky='nsew')
+            vertical = ttk.Scrollbar(frame, orient='vertical', command=self.followup_tree.yview)
+            vertical.grid(row=0, column=1, sticky='ns')
+            horizontal = ttk.Scrollbar(frame, orient='horizontal', command=self.followup_tree.xview)
+            horizontal.grid(row=1, column=0, sticky='ew')
+            self.followup_tree.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+            self.followup_tree.bind('<<TreeviewSelect>>', self.show_detail)
+            ttk.Label(self.results, textvariable=self.result_count, style='Hint.TLabel').grid(row=4, column=0, sticky='ew', padx=14, pady=5)
+            detail_frame = tk.Frame(self.results, background=SURFACE)
+            detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
+            self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1, relief='solid', background=CANVAS, foreground=TEXT, state='disabled')
+            self.detail.pack(side='left', fill='x', expand=True)
+            detail_scroll = ttk.Scrollbar(detail_frame, orient='vertical', command=self.detail.yview)
+            detail_scroll.pack(side='right', fill='y')
+            self.detail.configure(yscrollcommand=detail_scroll.set)
+            self._set_detail('选择一条线索查看完整请求；引用和后续回应可在 HTML 日报中展开核对。')
+
+        def _add_path(self, value):
+            path = Path(str(value).strip().strip('"')).expanduser().absolute()
+            if os.path.normcase(str(path)) not in {os.path.normcase(str(item)) for item in self.roots}:
+                self.roots.append(path)
+
+        def _refresh_roots(self):
+            self.source_list.delete(0, 'end')
+            for path in self.roots:
+                self.source_list.insert('end', str(path))
+            self.source_count.set(f'已添加 {len(self.roots)} 个目录 · 待生成时校验')
+
+        def choose_source(self):
+            if self.busy:
+                return
+            path = filedialog.askdirectory(parent=self.root, title='选择已复核的正式导出或批次目录', mustexist=True)
+            if path:
+                self._add_path(path)
+                self._refresh_roots()
+
+        def remove_sources(self):
+            if not self.busy:
+                selected = set(self.source_list.curselection())
+                self.roots = [path for index, path in enumerate(self.roots) if index not in selected]
+                self._refresh_roots()
+
+        def clear_sources(self):
+            if not self.busy:
+                self.roots.clear()
+                self._refresh_roots()
+
+        def choose_output(self):
+            if not self.busy:
+                path = filedialog.askdirectory(parent=self.root, title='选择日报保存位置')
+                if path:
+                    self.output_parent.set(path)
+
+        def pick_date(self):
+            if not self.busy:
+                return DatePicker(self.root, self.date, '选择日报日期')
+
+        def _load_settings(self):
+            try:
+                path = self.settings_directory / 'ui-settings.json'
+                if path.stat().st_size > 131072:
+                    return
+                saved = json.loads(path.read_text(encoding='utf-8'))
+                for key, variable in (('outputParent', self.output_parent), ('names', self.names)):
+                    if isinstance(saved.get(key), str):
+                        variable.set(saved[key])
+                if type(saved.get('lookback')) is int and 1 <= saved['lookback'] <= 90:
+                    self.lookback.set(str(saved['lookback']))
+                if type(saved.get('autoOpen')) is bool:
+                    self.auto_open.set(saved['autoOpen'])
+                if isinstance(saved.get('roots'), list):
+                    for value in saved['roots'][:100]:
+                        if isinstance(value, str) and value.strip():
+                            self._add_path(value)
+            except (OSError, ValueError, TypeError, AttributeError):
+                pass
+
+        def _save_settings(self):
+            try:
+                self.settings_directory.mkdir(parents=True, exist_ok=True)
+                values = {'outputParent': self.output_parent.get(), 'names': self.names.get(), 'lookback': int(self.lookback.get()), 'autoOpen': self.auto_open.get(), 'roots': list(map(str, self.roots))}
+                temporary = self.settings_directory / 'ui-settings.tmp'
+                temporary.write_text(json.dumps(values, ensure_ascii=False, indent=2), encoding='utf-8')
+                temporary.replace(self.settings_directory / 'ui-settings.json')
+            except (OSError, ValueError):
+                self._log('settings_not_saved', traceback.format_exc())
+
+        def _log(self, event, detail=''):
+            try:
+                self.settings_directory.mkdir(parents=True, exist_ok=True)
+                if self.log_path.exists() and self.log_path.stat().st_size > 2000000:
+                    self.log_path.replace(self.log_path.with_suffix('.previous.log'))
+                with self.log_path.open('a', encoding='utf-8') as stream:
+                    stream.write(json.dumps({'time': datetime.now(BEIJING).isoformat(), 'event': event, 'detail': detail}, ensure_ascii=False) + '\n')
+            except OSError:
+                pass
+
+        def _set_busy(self, busy):
+            self.busy = busy
+            for widget in self.controls:
+                widget.configure(state='disabled' if busy else 'normal')
+            self.source_list.configure(state='disabled' if busy else 'normal')
+            self.generate_button.configure(state='disabled' if busy else 'normal')
+            self.cancel_button.configure(state='normal' if busy else 'disabled')
+            self.progress.start(12) if busy else self.progress.stop()
+
+        def generate(self):
+            if self.busy:
+                return
+            try:
+                if not self.roots:
+                    raise DailyReportError('请先添加已复核的导出目录。')
+                day = self.date.get().strip()
+                selected = datetime.strptime(day, '%Y-%m-%d').date()
+                if selected.isoformat() != day:
+                    raise ValueError('date')
+                lookback = int(self.lookback.get())
+                if not 1 <= lookback <= 90:
+                    raise DailyReportError('回看范围须为 1 至 90 天。')
+                if not self.output_parent.get().strip():
+                    raise DailyReportError('请选择结果保存位置。')
+                parent = Path(self.output_parent.get().strip().strip('"')).expanduser().absolute()
+                output = parent / (day + '-' + self.client + '-' + datetime.now(BEIJING).strftime('%H%M%S-%f'))
+                names = [value.strip() for value in re.split('[,，;；\n]', self.names.get()) if value.strip()]
+            except (ValueError, DailyReportError) as error:
+                self.status.set(str(error) if isinstance(error, DailyReportError) else '请填写有效的日期（YYYY-MM-DD）和回看天数。')
+                self.tabs.select(self.prepare)
+                return
+            self.cancel_event.clear()
+            self._save_settings()
+            self._set_busy(True)
+            self.status.set('正在核对材料，请稍候…')
+            self._log('generation_started', str(output))
+            roots = tuple(self.roots)
+
+            def work():
+                try:
+                    result = self.builder(roots, client=self.client, day=day, output=output, version=self.version, lookback_days=lookback, my_names=names, progress=lambda event: self.events.put(('progress', event)), cancel=self.cancel_event.is_set)
+                except DailyReportCancelled:
+                    self._log('generation_cancelled')
+                    self.events.put(('cancelled', None))
+                except Exception as error:
+                    self._log('generation_failed', traceback.format_exc())
+                    text = str(error) if isinstance(error, DailyReportError) else '生成失败，请检查目录、权限和可用空间；详细原因见排查日志。'
+                    self.events.put(('error', text))
+                else:
+                    try:
+                        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+                    except (OSError, ValueError):
+                        self._log('preview_unavailable', traceback.format_exc())
+                        report = None
+                    self._log('generation_completed', str(result['output']))
+                    self.events.put(('done', (result, report)))
+            self.worker = threading.Thread(target=work, name='daily-report-worker', daemon=False)
+            self.worker.start()
+
+        def cancel(self):
+            if self.busy:
+                self.cancel_event.set()
+                self.cancel_button.configure(state='disabled')
+                self.status.set('正在停止；当前处理阶段结束后清理临时结果…')
+
+        def drain_events(self):
+            while True:
+                try:
+                    kind, data = self.events.get_nowait()
+                except queue.Empty:
+                    break
+                if kind == 'progress':
+                    if self.cancel_event.is_set():
+                        continue
+                    phase = data['phase']
+                    text = {'checking': '正在核对已复核材料', 'reading': '正在读取消息', 'organizing': '正在整理概览与待跟进', 'writing': '正在生成 HTML 日报'}.get(phase, '正在生成日报')
+                    if data.get('total'):
+                        text += f" · 第 {data['current']} / {data['total']} 个导出"
+                    if 'messages' in data:
+                        text += f" · 已读取 {data['messages']:,} 条"
+                    self.status.set(text + '…')
+                else:
+                    self._set_busy(False)
+                    if kind == 'done':
+                        result, report = data
+                        self.present_result(result, report)
+                        if self.auto_open.get() and (not self.closing):
+                            self.open_result('htmlFile')
+                    elif kind == 'cancelled':
+                        self.status.set('已取消，未发布本次日报；所填内容已保留。')
+                    else:
+                        self.status.set(data)
+                        self.tabs.select(self.prepare)
+                    if self.closing:
+                        self._destroy()
+                        return
+            if not self.closed:
+                self.poll_id = self.root.after(80, self.drain_events)
+
+        def present_result(self, result, report):
+            self.result = result
+            self.followups = report['followups'] if report else []
+            overview = result['overview']
+            for variable, key in zip(self.metrics, ('messages', 'activeConversations', 'personalFollowups', 'messagesWithGaps')):
+                variable.set(f'{overview[key]:,}')
+            self.result_note.set(f"{result['date']} · 仅统计选定材料。待跟进与处理信号需人工核对。" + ('' if report else ' 列表预览暂不可用，请打开 HTML 日报。'))
+            self.status.set('日报已生成，可打开完整报告或继续选择其他日期。')
+            self.clear_filters()
+            for button in (self.open_report_button, self.folder_button, self.copy_button):
+                button.configure(state='normal')
+            self.tabs.select(self.results)
+
+        def clear_filters(self):
+            self.search.set('')
+            self.filter.set('全部线索')
+            self.filter_followups()
+
+        def filter_followups(self):
+            query, choice = (self.search.get().strip().casefold(), self.filter.get())
+            rows = []
+            self.followup_tree.delete(*self.followup_tree.get_children())
+            for index, row in enumerate(self.followups):
+                personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
+                if choice == '本人相关待跟进' and (not personal):
+                    continue
+                if choice == '对象或身份待确认' and row['target'] != 'unknown':
+                    continue
+                if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
+                    continue
+                name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
+                if query and query not in ' '.join((name, row['senderName'], row['text'], row['stateLabel'])).casefold():
+                    continue
+                rows.append((index, row, name))
+            for index, row, name in rows[:500]:
+                self.followup_tree.insert('', 'end', iid=str(index), values=(name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140]))
+            self.result_count.set(f'匹配 {len(rows):,} 条 · ' + ('展示前 500 条，其余请在 HTML 日报中查看' if len(rows) > 500 else '选中线索查看完整请求'))
+            self._set_detail('当前筛选下没有线索。' if not rows else '选择一条线索查看完整请求；处理进展需结合 HTML 日报的原文依据核对。')
+
+        def _set_detail(self, text):
+            self.detail.configure(state='normal')
+            self.detail.delete('1.0', 'end')
+            self.detail.insert('1.0', text)
+            self.detail.configure(state='disabled')
+
+        def show_detail(self, _event=None):
+            selected = self.followup_tree.selection()
+            if selected:
+                row = self.followups[int(selected[0])]
+                name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
+                self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}")
+
+        @staticmethod
+        def _open_path(path):
+            if path.suffix.lower() == '.html':
+                if not webbrowser.open(path.resolve().as_uri()):
+                    raise OSError('No browser accepted the report')
+            elif os.name == 'nt':
+                os.startfile(str(path))
+            else:
+                webbrowser.open(path.resolve().as_uri())
+
+        def open_result(self, key):
+            if self.result:
+                try:
+                    self.opener(Path(self.result[key]))
+                except (OSError, ValueError):
+                    self._log('open_failed', traceback.format_exc())
+                    self.status.set('文件已生成，自动打开未成功；可复制结果路径手动打开。')
+
+        def copy_result(self):
+            if self.result:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(self.result['output'])
+                self.status.set('结果目录已复制。')
+
+        def open_log(self):
+            try:
+                self._log('diagnostics_opened')
+                self.opener(self.log_path)
+            except OSError:
+                self.status.set('暂时无法打开日志，请检查本机文件打开方式。')
+
+        def close(self):
+            if self.busy:
+                if not self.closing and messagebox.askyesno('停止并关闭', '正在生成日报。停止后关闭窗口？', parent=self.root):
+                    self.closing = True
+                    self.cancel()
+                return
+            self._save_settings()
+            self._destroy()
+
+        def _destroy(self):
+            self.closed = True
+            self.root.after_cancel(self.poll_id)
+            self.root.destroy()
+
+    def _run_daily_desktop(client, options, version):
+        checking = options.check_desktop
+        if checking and checking.exists():
+            return 2
+        root = tk.Tk()
+        if checking:
+            root.withdraw()
+        app = DailyReportApp(root, client, version, options=options, settings_directory=checking.parent / '.desktop-check-unused' if checking else None)
+        if checking:
+            try:
+                root.update_idletasks()
+                picker = app.pick_date()
+                picker.update_idletasks()
+                picker.destroy()
+                details = {'ok': True, 'client': client, 'version': version, 'desktopUI': True, 'tkVersion': root.tk.call('info', 'patchlevel'), 'tabs': len(app.tabs.tabs()), 'datePickerInitialized': True, 'reportColumns': list(app.followup_tree['columns']), 'requiresPythonInstallation': not getattr(__import__('sys'), 'frozen', False)}
+                checking.parent.mkdir(parents=True, exist_ok=True)
+                with checking.open('x', encoding='utf-8') as stream:
+                    stream.write(json.dumps(details, ensure_ascii=False, indent=2) + '\n')
+            except OSError:
+                return 2
+            finally:
+                app._destroy()
+            return 0
+        root.mainloop()
+        return 0
+    return _run_daily_desktop(client, options, version)
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
@@ -581,7 +1460,7 @@ from pathlib import Path
 import sys
 
 def _interactive_values(args, label):
-    if not sys.stdin.isatty():
+    if not sys.stdin or not sys.stdin.isatty():
         raise DailyReportError('交互模式需要本机控制台；宿主请传入导出目录、日期和新的输出目录。')
     print(label + '本地消息日报：选择原助手已人工确认的正式导出或批量导出目录。')
     if not args.export_root:
@@ -606,20 +1485,24 @@ def main(client, argv=None, *, standalone=False):
     parser.add_argument('--export-root', action='append', type=Path, default=[], help='正式导出或批次目录；可重复')
     parser.add_argument('--date', help='日报日期 YYYY-MM-DD，使用北京时间')
     parser.add_argument('--output', type=Path, help='新的日报目录，不覆盖已有结果')
-    parser.add_argument('--lookback-days', type=int, default=7, help='待跟进回看天数，含当天，默认 7')
+    parser.add_argument('--lookback-days', type=int, help='待跟进回看天数，含当天，默认 7')
     parser.add_argument('--my-name', action='append', default=[], help='用户明确提供的群内本人称呼，仅作点名线索；可重复')
     parser.add_argument('--capabilities', action='store_true', help='仅查询版本和能力，不读取材料')
     parser.add_argument('--interactive', action='store_true', help='在本机控制台逐项输入导出目录、日期和输出目录')
+    parser.add_argument('--desktop', action='store_true', help='打开本地桌面窗口；不带参数时默认使用')
+    parser.add_argument('--check-desktop', type=Path, metavar='NEW_JSON', help='检查桌面组件与日历初始化，将结果写入新的诊断文件后退出')
     parser.add_argument('--version', action='version', version=DAILY_REPORT_VERSION)
     arguments = list(sys.argv[1:] if argv is None else argv)
     args = parser.parse_args(arguments)
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
+        print(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
         return 0
+    if args.desktop or args.check_desktop or (not arguments):
+        return run_daily_desktop(client, args, DAILY_REPORT_VERSION)
     try:
-        if args.interactive or (not arguments and sys.stdin.isatty()):
+        if args.interactive:
             _interactive_values(args, label)
     except (DailyReportError, EOFError, KeyboardInterrupt) as error:
         print(json.dumps({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}, ensure_ascii=False))
@@ -627,7 +1510,7 @@ def main(client, argv=None, *, standalone=False):
     if not args.export_root or not args.date or (not args.output):
         parser.error('需要 --export-root、--date 和 --output。')
     try:
-        result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output, version=DAILY_REPORT_VERSION, lookback_days=args.lookback_days, my_names=args.my_name)
+        result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output, version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
     except (DailyReportError, OSError) as error:
         result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
         print(json.dumps(result, ensure_ascii=False))

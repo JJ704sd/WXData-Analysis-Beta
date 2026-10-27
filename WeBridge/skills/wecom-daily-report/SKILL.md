@@ -2,7 +2,7 @@
 name: wecom-daily-report
 description: 将企业微信已复核的本地群聊和私聊导出整理成每日概览、待跟进线索及可搜索的 HTML 日报；用户要求企微日报或整理当天消息时使用。
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   display_name: "企微本地消息日报"
   display_name_en: "WeCom Local Daily Report"
   description_zh: "合并企微已复核的群聊与私聊导出，生成每日概览、待跟进线索和 HTML 日报。"
@@ -28,9 +28,9 @@ metadata:
   --date "2026-10-27" --output "任务目录\reports\wecom-2026-10-27" --lookback-days 7
 ```
 
-将命令中的路径、日期替换为本次实际值；用参数数组调用，不拼接可执行命令文本。调用权限由宿主控制。直接运行 EXE，不要求启用 PowerShell 脚本或修改系统策略；参数及返回值见包内 `references/usage.md`。
+将命令中的路径、日期替换为本次实际值；用参数数组调用，不拼接可执行命令文本。调用权限由宿主控制。直接运行 EXE，不要求启用 PowerShell 脚本或修改系统策略；用户要求本机交互时可打开 `bin/wecom-daily-report-ui.exe` 或根目录 `Start.cmd`；自动生成继续用带参数的命令行入口，不弹出窗口。参数及返回值见包内 `references/usage.md`。
 
-能力查询应返回 `client=wecom`、`version=1.1.0`、`standalone=true`，以及 `requiresRepository=false`、`requiresPythonInstallation=false`。读取生成命令的退出码和 JSON；只有退出码 0 且 `ok=true` 才报告完成。返回 HTML 路径、当天消息数、活跃会话数、本人相关待跟进数及影响范围的限制，不自动把全部原文读入对话或上传其他服务。用户要求解释具体线索时再按其范围读取证据。
+能力查询应返回 `client=wecom`、`version=1.2.0`、`standalone=true`，以及 `requiresRepository=false`、`requiresPythonInstallation=false`。读取生成命令的退出码和 JSON；只有退出码 0 且 `ok=true` 才报告完成。返回 HTML 路径、当天消息数、活跃会话数、本人相关待跟进数及影响范围的限制，不自动把全部原文读入对话或上传其他服务。用户要求解释具体线索时再按其范围读取证据。
 
 日报按字面规则找请求和风险；暂缓仍待跟进，回复不等于办结，完成和取消仅作为待核对信号。群内发给别人的请求不算本人待办；对象或身份未知时保留未知。引用、转发、附件内容保持原归属，不据此给当前发送者添加请求。不提供历史未读数，不假定选定导出覆盖账号全部消息。
 

@@ -25,6 +25,7 @@ TARGETS = (
     'test_windows_hook_smoke.SourceBindingTests',
     'test_daily_reports',
     'test_daily_distribution.StandaloneDistributionTests',
+    'test_daily_ui',
 )
 
 

@@ -17,7 +17,7 @@ from test_daily_reports import DAY, formal_export, message
 
 
 def clean_environment():
-    result = {key: value for key, value in os.environ.items() if key.upper() not in {'PATH', 'PYTHONPATH', 'PYTHONHOME', 'PSMODULEPATH'}}
+    result = {key: value for key, value in os.environ.items() if key.upper() not in {'PATH', 'PYTHONPATH', 'PYTHONHOME', 'PSMODULEPATH', 'TCL_LIBRARY', 'TK_LIBRARY'}}
     if os.name == 'nt':
         windows = Path(os.environ.get('SystemRoot', 'C:/Windows'))
         result['PATH'] = str(windows / 'System32') + ';' + str(windows)
@@ -128,7 +128,8 @@ class StandaloneDistributionTests(unittest.TestCase):
         paths = ['scripts/chat_release.py', 'scripts/daily_report.py', 'web_mvp/offline_chat.py',
                  'web_mvp/database_snapshot.py', 'web_mvp/offline_review.py', 'web_mvp/offline_images.py',
                  'web_mvp/offline_reporting.py', 'web_mvp/offline_content_status.py',
-                 'web_mvp/offline_daily.py', 'web_mvp/offline_daily_html.py']
+                 'web_mvp/offline_daily.py', 'web_mvp/offline_daily_html.py',
+                 'web_mvp/offline_daily_ui.py', 'web_mvp/offline_theme.py', 'web_mvp/offline_calendar.py']
         for relative in paths:
             target = copied / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -166,7 +167,7 @@ class WindowsDeliveryTests(unittest.TestCase):
                     value = bundle.read(item['path'])
                     self.assertEqual(len(value), item['bytes'])
                     self.assertEqual(hashlib.sha256(value).hexdigest(), item['sha256'])
-                for license_name in ('Python-LICENSE.txt', 'PyInstaller-COPYING.txt', 'SOURCE-NOTICE.md'):
+                for license_name in ('Python-LICENSE.txt', 'PyInstaller-COPYING.txt', 'Tcl-license.terms', 'Tk-license.terms', 'SOURCE-NOTICE.md'):
                     self.assertGreater(len(bundle.read('licenses/' + license_name)), 100)
                 if product['delivery'] == 'skill':
                     self.assertIn('SKILL.md', bundle.namelist())
@@ -177,6 +178,26 @@ class WindowsDeliveryTests(unittest.TestCase):
                 for line in bundle.read('SHA256SUMS.txt').decode('utf-8').splitlines():
                     digest, relative = line.split('  ', 1)
                     self.assertEqual(hashlib.sha256(bundle.read(relative)).hexdigest(), digest)
+
+    def test_all_packaged_desktops_initialize_without_external_python_or_tcl_paths(self):
+        for (client, kind), directory in self.packages.items():
+            with self.subTest(client=client, delivery=kind):
+                runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                binary = directory / runtime['desktopRelativePath']
+                self.assertEqual(hashlib.sha256(binary.read_bytes()).hexdigest(), runtime['desktopSha256'])
+                receipt = self.base / (client + '-' + kind + '-desktop.json')
+                result = run_process([binary, '--check-desktop', receipt], cwd=self.base)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                check = json.loads(receipt.read_text(encoding='utf-8'))
+                self.assertEqual(check['client'], client)
+                self.assertEqual(check['version'], DAILY_REPORT_VERSION)
+                self.assertTrue(check['datePickerInitialized'])
+                self.assertFalse(check['requiresPythonInstallation'])
+                self.assertEqual(check['reportColumns'], ['conversation', 'sender', 'time', 'state', 'request'])
+                self.assertIn('--desktop', (directory / 'Start.cmd').read_text(encoding='ascii'))
+                duplicate = run_process([binary, '--check-desktop', receipt], cwd=self.base)
+                self.assertNotEqual(duplicate.returncode, 0)
+                self.assertEqual(check, json.loads(receipt.read_text(encoding='utf-8')))
 
     def test_both_portable_and_skill_executables_generate_without_python_on_path(self):
         for client in ('wechat', 'wecom'):

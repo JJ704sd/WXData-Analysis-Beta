@@ -20,6 +20,20 @@ class DailyReportError(ArchiveError):
     pass
 
 
+class DailyReportCancelled(DailyReportError):
+    pass
+
+
+def _checkpoint(cancel):
+    if cancel and cancel():
+        raise DailyReportCancelled('已取消生成，未发布日报。')
+
+
+def _progress(callback, phase, **details):
+    if callback:
+        callback({'phase': phase, **details})
+
+
 REQUEST = re.compile(r'请(?:您|你|大家|各位)?(?:尽快|及时|务必|协助|帮忙|先)?(?:问|帮|确认|回复|提供|处理|安排|发|查|看|跟进)|麻烦|能否|是否|可以吗|什么时候|多少钱|进展(?:如何|怎么样)|跟进(?:一下|下)|[?？]', re.I)
 DEFER = re.compile(r'稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)')
 COMPLETION = re.compile(r'已(?:经)?(?:处理|完成|发送|发出|解决|确认|回复)|问题.{0,4}解决')
@@ -164,12 +178,16 @@ def _moment(value):
         return None
 
 
-def _records(sources, start, end):
+def _records(sources, start, end, *, progress=None, cancel=None):
     records, duplicate_count, undated = {}, 0, 0
-    for source in sources:
+    for source_index, source in enumerate(sources, 1):
+        _checkpoint(cancel)
         digest, count = hashlib.sha256(), 0
         with (source['root'] / 'messages.jsonl').open('rb') as stream:
             for line_number, raw in enumerate(stream, 1):
+                if line_number % 500 == 1:
+                    _checkpoint(cancel)
+                    _progress(progress, 'reading', current=source_index, total=len(sources), messages=count)
                 digest.update(raw)
                 if not raw.strip():
                     continue
@@ -292,7 +310,8 @@ def _followups(records, my_names):
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
             results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'],
                             'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'],
-                            'senderName': request['senderName'], 'text': request['text'], 'target': target, 'targetBasis': basis,
+                            'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认',
+                            'text': request['text'], 'target': target, 'targetBasis': basis,
                             'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score,
                             'replyEvidenceId': reply['evidenceId'] if reply else None,
                             'replyBasis': ('explicit_quote' if _quote_targets(reply, request) else 'direct_chronology') if reply else None,
@@ -300,7 +319,8 @@ def _followups(records, my_names):
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
 
-def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=()):
+def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=(),
+                       progress=None, cancel=None):
     """Validate selected exports, aggregate one account, and publish a new report bundle."""
     if client not in {'wechat', 'wecom'}:
         raise DailyReportError('日报客户端无效。')
@@ -315,8 +335,15 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
     day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
     end = day_start + timedelta(days=1)
+    _checkpoint(cancel)
+    _progress(progress, 'checking')
     roots, limitations = _roots(export_roots)
-    sources = [_source(root, client) for root in roots]
+    sources = []
+    for index, root in enumerate(roots, 1):
+        _checkpoint(cancel)
+        _progress(progress, 'checking', current=index, total=len(roots))
+        sources.append(_source(root, client))
+        _checkpoint(cancel)
     if len({source['accountKey'] for source in sources}) != 1:
         raise DailyReportError('所选材料的账号标识不一致，请按同一账号分别生成日报。')
     destination = Path(output).expanduser().absolute()
@@ -330,7 +357,9 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
             raise DailyReportError('日报目录必须与原始数据和正式导出分开。')
     if destination.exists():
         raise DailyReportError('日报目录已存在，请选择新的目录。')
-    records, duplicates, undated = _records(sources, start, end)
+    records, duplicates, undated = _records(sources, start, end, progress=progress, cancel=cancel)
+    _checkpoint(cancel)
+    _progress(progress, 'organizing', messages=len(records))
     today = [row for row in records if row['time'] and day_start <= _moment(row['time']) < end]
     followups = _followups(records, tuple(name.strip() for name in my_names if name.strip()))
     hours = Counter(_moment(row['time']).hour for row in today)
@@ -373,12 +402,15 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
               'evidenceFile': 'evidence.jsonl', 'diagnosticsFile': 'diagnostics.jsonl',
               'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
     from offline_daily_html import render_report
+    _checkpoint(cancel)
+    _progress(progress, 'writing')
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.daily-report-', dir=destination.parent))
     try:
         (stage / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         with (stage / 'evidence.jsonl').open('w', encoding='utf-8') as stream:
             for row in records:
+                _checkpoint(cancel)
                 stream.write(json.dumps(row, ensure_ascii=False) + '\n')
         with (stage / 'diagnostics.jsonl').open('w', encoding='utf-8') as stream:
             def audit(event, **fields):
@@ -399,6 +431,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
                      for path in sorted(stage.iterdir())]
         (stage / 'manifest.json').write_text(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client,
             'date': day, 'version': version, 'files': checksums}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        _checkpoint(cancel)
         publish_directory(stage, destination)
     finally:
         if stage.exists():

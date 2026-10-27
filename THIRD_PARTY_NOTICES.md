@@ -4,6 +4,6 @@
 
 原四类采集助手使用 Python、Tcl/Tk、cryptography、zstandard、Pillow、pypdf、xlrd、olefile 和 msoffcrypto-tool，构建使用 PyInstaller。运行依赖和构建依赖分别列在 `WeBridge/requirements.txt` 与 `WeBridge/scripts/requirements-offline-build.txt`。便携包生成时收集当前 Python、Tcl/Tk 及这些依赖的许可文本，保留到包内 `licenses/`；仓库保留原有 `Tcl-8.6.15-license.terms`。
 
-两个消息日报脚本仅使用 Python 标准库。日报便携 EXE 由 PyInstaller 打包 Python 运行时，分别附带 Python 和 PyInstaller 许可文本；不把上述采集、文档解析和 GUI 依赖作为日报用户的安装要求。单文件源码从当前维护模块中自动生成，保留来源文件摘要。
+两个消息日报脚本仅使用 Python 标准库，桌面界面使用 tkinter，复用原助手的主题和日期选择器。日报便携 EXE 由 PyInstaller 打包 Python 与 Tcl/Tk，附带 Python、PyInstaller、Tcl 和 Tk 许可文本，用户无需另装运行库。单文件源码从维护模块自动生成并保留来源摘要；源码桌面模式需要 Python 自带 Tcl/Tk，命令行不加载界面模块。
 
 用户提供的 `wecom-chat-extractor-win.zip` 仅作 Windows 数据布局的参考，本仓库没有复制其代码或重新分发该 ZIP，因此不将其许可证作为本项目的统一授权。

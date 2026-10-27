@@ -1,52 +1,35 @@
 {
   "schemaVersion": 1,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "date": "2026-10-27",
   "ok": true,
-  "uniqueTestsPassed": 34,
+  "uniqueTestsPassed": 45,
   "unresolvedFailures": 0,
   "unresolvedErrors": 0,
   "skipped": 0,
   "testGroups": {
     "dailyAndBusinessPresentation": 16,
+    "nativeDesktopAndCancellation": 10,
     "standaloneDistribution": 6,
     "accountSourceRegression": 9,
-    "compiledWindowsDelivery": 3
+    "compiledWindowsDelivery": 4
   },
   "runs": [
     {
       "schemaVersion": 1,
       "date": "2026-10-27",
       "targets": [
+        "test_daily_ui",
         "test_daily_reports",
-        "test_daily_distribution.StandaloneDistributionTests",
+        "test_daily_distribution",
         "test_runtime_identity",
         "test_windows_hook_smoke.SourceBindingTests"
       ],
-      "testsRun": 29,
+      "testsRun": 45,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 6.55,
-      "ok": true,
-      "usesSyntheticData": true,
-      "realAccountValidation": false,
-      "compiledBinaryValidation": false,
-      "python": "3.14.6",
-      "platform": "win32",
-      "failedTests": []
-    },
-    {
-      "schemaVersion": 1,
-      "date": "2026-10-27",
-      "targets": [
-        "test_daily_distribution"
-      ],
-      "testsRun": 9,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0,
-      "seconds": 10.73,
+      "seconds": 56.21,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -60,12 +43,12 @@
   "platform": "Windows-10-10.0.19045-SP0",
   "runtimeIdentity": {
     "ok": true,
-    "scannedFiles": 105,
+    "scannedFiles": 106,
     "issues": []
   },
   "pythonSyntax": {
     "ok": true,
-    "files": 11
+    "files": 10
   },
   "powerShellBuildSyntax": true,
   "sourceSkillValidation": {
@@ -76,7 +59,10 @@
   "standaloneSourceMatchesMaintenanceModules": true,
   "standalonePythonRequiresSitePackages": false,
   "compiledBinaryValidation": true,
+  "compiledDesktopComponentInitialization": true,
+  "compiledDesktopEndToEndUIValidation": false,
   "pythonAbsentFromChildProcessPath": true,
+  "externalTclTkEnvironmentRemoved": true,
   "pythonUninstalledHostValidation": false,
   "chineseAndSpacedPathsValidated": true,
   "crossClientInputRejected": true,
@@ -85,56 +71,58 @@
   "licensesIncluded": [
     "Python",
     "PyInstaller",
+    "Tcl",
+    "Tk",
     "Source attribution"
   ],
   "sourceScripts": [
     {
       "path": "standalone/wechat_daily_report.py",
-      "bytes": 57557,
-      "sha256": "9eb8e3a3e8ef6d1a16612a11e6f0429487c0d16048f87fed92d5b58a26db6738"
+      "bytes": 114296,
+      "sha256": "7c3c8f3374c0fe3e6025d5c2060f6acb364ff8e81a80dfab639912a366567aa7"
     },
     {
       "path": "standalone/wecom_daily_report.py",
-      "bytes": 57555,
-      "sha256": "30ac096f3d2bddd043ea8ed661c0ef5730d48ba6e99f304fca8a2a5b5860468e"
+      "bytes": 114294,
+      "sha256": "3a6e64d2b84a390aad6e475a27857699e6672ae4b62eaadcadbb6cabd18f4131"
     }
   ],
   "products": [
     {
       "client": "wechat",
       "delivery": "portable",
-      "directory": "WeChat-Daily-Report-1.1.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-1.1.0-Windows-x64.zip",
-      "version": "1.1.0",
-      "bytes": 9902160,
-      "sha256": "1edb4230f33154454c696a64608e4fb06e982cdd85d0632be23cd523a013345c"
+      "directory": "WeChat-Daily-Report-1.2.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-1.2.0-Windows-x64.zip",
+      "version": "1.2.0",
+      "bytes": 26295226,
+      "sha256": "85a53a6a14c86bcd757f870d01f0a7d2cbf4927b3dc31cd6124c76adaa36acc2"
     },
     {
       "client": "wechat",
       "delivery": "skill",
-      "directory": "WeChat-Daily-Report-Skill-1.1.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-Skill-1.1.0-Windows-x64.zip",
-      "version": "1.1.0",
-      "bytes": 9904716,
-      "sha256": "c72f5e882addc4513a9d6fb28b17bec35efdcb4347e10053b9340c234ef5c5a7"
+      "directory": "WeChat-Daily-Report-Skill-1.2.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-Skill-1.2.0-Windows-x64.zip",
+      "version": "1.2.0",
+      "bytes": 26297871,
+      "sha256": "2fab605a5b990d81507cd121a80216abe2f0b853a717be7bc60b2b475b52a5e8"
     },
     {
       "client": "wecom",
       "delivery": "portable",
-      "directory": "WeCom-Daily-Report-1.1.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-1.1.0-Windows-x64.zip",
-      "version": "1.1.0",
-      "bytes": 9902140,
-      "sha256": "5b01189c3535d16d73e8c8e3aec934c6b2027c816fc7855a4bc31bc36aa921a4"
+      "directory": "WeCom-Daily-Report-1.2.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-1.2.0-Windows-x64.zip",
+      "version": "1.2.0",
+      "bytes": 26295719,
+      "sha256": "71e56d84c429a99400f52a9f0c2569a5c5b4f1587cd70d135c45cdc239002603"
     },
     {
       "client": "wecom",
       "delivery": "skill",
-      "directory": "WeCom-Daily-Report-Skill-1.1.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-Skill-1.1.0-Windows-x64.zip",
-      "version": "1.1.0",
-      "bytes": 9904693,
-      "sha256": "6d52b5f07c61f488691ec01efb3742ac32907d25058eff80fe636269e6f1439c"
+      "directory": "WeCom-Daily-Report-Skill-1.2.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-Skill-1.2.0-Windows-x64.zip",
+      "version": "1.2.0",
+      "bytes": 26298371,
+      "sha256": "4284514ddf1ab06de5c514294c7fe0c82caeb26959a4b12b397f5b93c7f02eba"
     }
   ],
   "capabilities": {
@@ -142,7 +130,7 @@
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wechat",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "conversationModes": [
         "group",
         "direct"
@@ -152,13 +140,14 @@
       "callsModelAPI": false,
       "standalone": true,
       "requiresRepository": false,
+      "desktopUI": true,
       "requiresPythonInstallation": false
     },
     "wecom": {
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wecom",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "conversationModes": [
         "group",
         "direct"
@@ -168,23 +157,68 @@
       "callsModelAPI": false,
       "standalone": true,
       "requiresRepository": false,
+      "desktopUI": true,
       "requiresPythonInstallation": false
     }
   },
-  "browser": {
-    "surface": "Codex in-app browser",
-    "localhostOnly": true,
+  "desktopComponents": {
+    "wechat": {
+      "ok": true,
+      "client": "wechat",
+      "version": "1.2.0",
+      "desktopUI": true,
+      "tkVersion": "8.6.15",
+      "tabs": 2,
+      "datePickerInitialized": true,
+      "reportColumns": [
+        "conversation",
+        "sender",
+        "time",
+        "state",
+        "request"
+      ],
+      "requiresPythonInstallation": false
+    },
+    "wecom": {
+      "ok": true,
+      "client": "wecom",
+      "version": "1.2.0",
+      "desktopUI": true,
+      "tkVersion": "8.6.15",
+      "tabs": 2,
+      "datePickerInitialized": true,
+      "reportColumns": [
+        "conversation",
+        "sender",
+        "time",
+        "state",
+        "request"
+      ],
+      "requiresPythonInstallation": false
+    }
+  },
+  "nativeTkInteraction": {
     "clients": [
       "wechat",
       "wecom"
     ],
-    "searchAndPersonalFilterMatchedQuoteRequest": true,
-    "originalMessageExpanded": true,
-    "mainViewContainsTechnicalTraceMetadata": false,
-    "diagnosticPanelCollapsedByDefault": true,
-    "noHorizontalPageOverflow": true,
-    "consoleErrors": 0,
-    "viewportWidth": 1265
+    "backgroundGenerationAndCancellation": true,
+    "inputsPreservedOnFailure": true,
+    "duplicateSubmissionBlocked": true,
+    "searchAndFilters": true,
+    "fullRequestDetails": true,
+    "datePickerSelection": true,
+    "openAndCopyCallbacks": true,
+    "openCallbacksUseTestDoubles": true,
+    "settingsRestoredWithoutAutoRun": true,
+    "smallWindow": [
+      1000,
+      700
+    ],
+    "tkScaling": 1.75,
+    "actionsAndDetailsWithinVisibleBounds": true,
+    "senderIdFallbackHiddenFromBusinessView": true,
+    "desktopScreenshotValidation": false
   },
   "realAccountValidation": false,
   "originalFaultHostValidation": false,

@@ -14,7 +14,7 @@ from offline_daily import DailyReportError, build_daily_report
 
 
 def _interactive_values(args, label):
-    if not sys.stdin.isatty():
+    if not sys.stdin or not sys.stdin.isatty():
         raise DailyReportError('交互模式需要本机控制台；宿主请传入导出目录、日期和新的输出目录。')
     print(label + '本地消息日报：选择原助手已人工确认的正式导出或批量导出目录。')
     if not args.export_root:
@@ -40,10 +40,12 @@ def main(client, argv=None, *, standalone=False):
     parser.add_argument('--export-root', action='append', type=Path, default=[], help='正式导出或批次目录；可重复')
     parser.add_argument('--date', help='日报日期 YYYY-MM-DD，使用北京时间')
     parser.add_argument('--output', type=Path, help='新的日报目录，不覆盖已有结果')
-    parser.add_argument('--lookback-days', type=int, default=7, help='待跟进回看天数，含当天，默认 7')
+    parser.add_argument('--lookback-days', type=int, help='待跟进回看天数，含当天，默认 7')
     parser.add_argument('--my-name', action='append', default=[], help='用户明确提供的群内本人称呼，仅作点名线索；可重复')
     parser.add_argument('--capabilities', action='store_true', help='仅查询版本和能力，不读取材料')
     parser.add_argument('--interactive', action='store_true', help='在本机控制台逐项输入导出目录、日期和输出目录')
+    parser.add_argument('--desktop', action='store_true', help='打开本地桌面窗口；不带参数时默认使用')
+    parser.add_argument('--check-desktop', type=Path, metavar='NEW_JSON', help='检查桌面组件与日历初始化，将结果写入新的诊断文件后退出')
     parser.add_argument('--version', action='version', version=DAILY_REPORT_VERSION)
     arguments = list(sys.argv[1:] if argv is None else argv)
     args = parser.parse_args(arguments)
@@ -54,10 +56,14 @@ def main(client, argv=None, *, standalone=False):
                           'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports',
                           'readsLiveClient': False, 'callsModelAPI': False,
                           'standalone': standalone, 'requiresRepository': not standalone,
+                          'desktopUI': True,
                           'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
         return 0
+    if args.desktop or args.check_desktop or not arguments:
+        from offline_daily_ui import run_daily_desktop
+        return run_daily_desktop(client, args, DAILY_REPORT_VERSION)
     try:
-        if args.interactive or (not arguments and sys.stdin.isatty()):
+        if args.interactive:
             _interactive_values(args, label)
     except (DailyReportError, EOFError, KeyboardInterrupt) as error:
         print(json.dumps({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}, ensure_ascii=False))
@@ -66,7 +72,7 @@ def main(client, argv=None, *, standalone=False):
         parser.error('需要 --export-root、--date 和 --output。')
     try:
         result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output,
-                                    version=DAILY_REPORT_VERSION, lookback_days=args.lookback_days, my_names=args.my_name)
+                                    version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
     except (DailyReportError, OSError) as error:
         result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
         print(json.dumps(result, ensure_ascii=False))

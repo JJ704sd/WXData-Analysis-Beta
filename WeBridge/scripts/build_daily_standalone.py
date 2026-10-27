@@ -59,6 +59,20 @@ def standalone_source(client, project=PROJECT):
         tree = ast.parse(path.read_text(encoding='utf-8'))
         nodes.extend(_InlineImports().visit(tree).body)
         source_paths.append(path)
+    # Keep Tk optional for CLI/Skill calls. The desktop's theme and calendar are
+    # shared with the original assistants, loaded only when opening a window.
+    desktop = ast.parse('def run_daily_desktop(client, options, version):\n    pass\n').body[0]
+    desktop.body = []
+    for name in ('offline_theme.py', 'offline_calendar.py', 'offline_daily_ui.py'):
+        path = web / name
+        definitions = _InlineImports().visit(ast.parse(path.read_text(encoding='utf-8'))).body
+        for node in definitions:
+            if isinstance(node, ast.FunctionDef) and node.name == 'run_daily_desktop':
+                node.name = '_run_daily_desktop'
+        desktop.body.extend(definitions)
+        source_paths.append(path)
+    desktop.body.extend(ast.parse('return _run_daily_desktop(client, options, version)').body)
+    nodes.append(desktop)
     cli = scripts / 'daily_report.py'
     cli_tree = ast.parse(cli.read_text(encoding='utf-8'))
     nodes.extend(node for node in _InlineImports().visit(cli_tree).body
@@ -67,7 +81,7 @@ def standalone_source(client, project=PROJECT):
     tree = ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[]))
     for node in ast.walk(tree):
         modules = [alias.name.split('.')[0] for alias in node.names] if isinstance(node, ast.Import) else [(node.module or '').split('.')[0]] if isinstance(node, ast.ImportFrom) else []
-        if any(module not in {'argparse', 'bisect', 'collections', 'datetime', 'hashlib', 'html', 'json', 'os', 'pathlib', 're', 'shutil', 'sys', 'tempfile', 'time'} for module in modules):
+        if any(module not in {'argparse', 'bisect', 'calendar', 'collections', 'datetime', 'hashlib', 'html', 'json', 'os', 'pathlib', 'queue', 're', 'shutil', 'sys', 'tempfile', 'threading', 'time', 'tkinter', 'traceback', 'webbrowser'} for module in modules):
             raise ValueError('A non-standard-library dependency entered the standalone report')
     provenance = '\n'.join('# ' + path.relative_to(project).as_posix() + ' sha256-utf8-lf=' + hashlib.sha256(path.read_text(encoding='utf-8').encode('utf-8')).hexdigest()
                            for path in source_paths)

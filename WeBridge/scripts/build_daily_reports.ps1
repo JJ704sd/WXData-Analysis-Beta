@@ -18,22 +18,26 @@ $env:PYINSTALLER_CONFIG_DIR = Join-Path $destination 'cache'
 try {
 $pythonLicense = & $Python -c "import sys; from pathlib import Path; print(Path(sys.base_prefix) / 'LICENSE.txt')"
 $builderLicense = & $Python -c "import importlib.metadata; print(importlib.metadata.distribution('pyinstaller').locate_file('pyinstaller-6.22.3.dist-info/licenses/COPYING.txt'))"
+$tkLicense = & $Python -c "import sys; from pathlib import Path; print(Path(sys.base_prefix) / 'tcl/tk8.6/license.terms')"
 $standalone = Join-Path $destination 'standalone'
 & $Python (Join-Path $PSScriptRoot 'build_daily_standalone.py') --output $standalone
 if ($LASTEXITCODE -ne 0) { throw 'Standalone source generation failed.' }
 foreach ($client in @('wechat', 'wecom')) {
-    & $Python -m PyInstaller --onefile --console --noupx --clean --noconfirm `
-        --name ($client + '-daily-report') `
+    foreach ($surface in @('console', 'windowed')) {
+    $binaryName = $client + '-daily-report' + $(if ($surface -eq 'windowed') { '-ui' } else { '' })
+    & $Python -m PyInstaller --onefile --noupx --clean --noconfirm `
+        "--$surface" --name $binaryName `
         --distpath (Join-Path $destination 'bin') `
-        --workpath (Join-Path $destination ('work\' + $client)) `
+        --workpath (Join-Path $destination ('work\' + $binaryName)) `
         --specpath (Join-Path $destination 'spec') `
         (Join-Path $standalone ($client + '_daily_report.py'))
     if ($LASTEXITCODE -ne 0) { throw ('The ' + $client + ' executable build failed.') }
+    }
 }
 & $Python (Join-Path $PSScriptRoot 'package_daily_reports.py') `
     --binary-dir (Join-Path $destination 'bin') --standalone-dir $standalone `
     --output-root (Join-Path $destination 'packages') `
-    --python-license $pythonLicense --pyinstaller-license $builderLicense
+    --python-license $pythonLicense --pyinstaller-license $builderLicense --tk-license $tkLicense
 if ($LASTEXITCODE -ne 0) { throw 'Daily-report packaging failed.' }
 } finally {
     if ($null -eq $dailyPreviousCache) { Remove-Item Env:PYINSTALLER_CONFIG_DIR -ErrorAction SilentlyContinue }

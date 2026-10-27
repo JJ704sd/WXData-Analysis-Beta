@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 import zipfile
 
 from build_daily_standalone import PROJECT, standalone_source
@@ -48,12 +49,32 @@ def verify_binary(path, client):
     return capabilities
 
 
+def verify_desktop(path, client):
+    environment = {key: value for key, value in os.environ.items()
+                   if key.upper() not in {'PYTHONPATH', 'PYTHONHOME', 'TCL_LIBRARY', 'TK_LIBRARY'}}
+    with tempfile.TemporaryDirectory(prefix='daily-desktop-components-') as temporary:
+        receipt = Path(temporary) / 'desktop.json'
+        process = subprocess.run([str(Path(path).resolve()), '--check-desktop', str(receipt)],
+                                 capture_output=True, timeout=30, env=environment,
+                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        if process.returncode or not receipt.is_file():
+            raise ValueError('The packaged desktop could not initialize its Tk components')
+        result = json.loads(receipt.read_text(encoding='utf-8'))
+    expected = {'ok': True, 'client': client, 'version': DAILY_REPORT_VERSION,
+                'desktopUI': True, 'datePickerInitialized': True, 'requiresPythonInstallation': False}
+    if any(result.get(key) != value for key, value in expected.items()):
+        raise ValueError('The desktop version or runtime does not match')
+    return result
+
+
 def usage(client):
     label = '个微' if client == 'wechat' else '企微'
     binary = client + '-daily-report.exe'
     return ('# ' + label + '本地消息日报 ' + DAILY_REPORT_VERSION + '\n\n'
             'Windows x64 便携版内置 Python，用户无需安装 Python、pip 或下载仓库。解压到本机可写目录；'
-            '直接双击 Start.cmd，按提示输入原助手已复核的导出目录、日报日期和新的输出目录。'
+            '直接双击 Start.cmd 或 ' + client + '-daily-report-ui.exe 打开桌面窗口，添加已复核的导出目录，'
+            '用日历、今天或昨天选择日期，选择保存位置后点击“生成日报”。'
+            '生成在后台运行，可取消；每次自动新建结果目录。完成后可搜索、筛选线索，打开 HTML 或复制结果路径。'
             '不要在压缩包预览窗口中直接启动。\n\n'
             'Skill 包含根目录 SKILL.md、bin/' + binary + ' 和 scripts 中的单文件源码。'
             '在 WorkBuddy 的“添加技能 → 上传技能”中导入对应 Skill ZIP；其他宿主需支持 Skill 目录、'
@@ -64,8 +85,8 @@ def usage(client):
             '```powershell\n& ".\\' + binary + '" --export-root "D:\\ChatExports\\reviewed-batch" `\n'
             '  --date 2026-10-27 --lookback-days 7 --output "D:\\DailyReports\\' + client + '-2026-10-27"\n```\n\n'
             '可重复传入 --export-root 合并同一账号的群聊、私聊；--my-name 可重复设置用户提供的群内称呼。'
-            '--capabilities 仅查询客户端、版本及能力，--interactive 打开控制台向导。'
-            '单文件 ' + client + '_daily_report.py 使用同样参数，需要 Python 3.12+，仅用标准库，无需 pip。\n\n'
+            '--capabilities 仅查询客户端、版本及能力，--interactive 打开控制台向导，--desktop 打开桌面。'
+            '单文件 ' + client + '_daily_report.py 使用同样参数，需要 Python 3.12+，桌面模式需该 Python 自带 Tcl/Tk；无需 pip。\n\n'
             '输入必须是原四类助手已人工确认的正式导出，含 manifest.json、review.json、messages.jsonl，'
             '或含 batch.json 的批次。不直接读取数据库、不取密钥，不伪造确认状态。'
             '拒绝混账号、混客户端、摘要变化、越界链接及覆盖已有日报。\n\n'
@@ -76,6 +97,8 @@ def usage(client):
             '成功退出码 0，JSON 含 ok=true 及 HTML/JSON/证据路径；失败退出码 2。'
             '打开 report.html 查看搜索、筛选及原文依据；主界面只展示业务重点，技术 ID、来源摘要及关联记录保存在 diagnostics.jsonl。'
             'report.json、evidence.jsonl、manifest.json 位于同目录。'
+            '桌面记住上次选择的材料、保存位置和回看设置，日期默认今天，不自动生成；'
+            '界面设置及失败日志位于 %LOCALAPPDATA%/LocalChatDailyReports/' + client + '/，原助手配置不变。'
             '报告仅覆盖所选材料，包含消息原文和来源路径。程序不联网；如宿主读取原文，该内容可能进入宿主对话。\n\n'
             'WorkBuddy 格式来源：https://open.workbuddy.cn/docs/skill\n'
             '导入步骤来源：https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market\n')
@@ -111,22 +134,23 @@ def _finish(directory, *, client, kind, format_name):
             'version': DAILY_REPORT_VERSION, 'bytes': archive.stat().st_size, 'sha256': sha256(archive)}
 
 
-def package_all(binary_dir, standalone_dir, output_root, *, python_license, pyinstaller_license,
+def package_all(binary_dir, standalone_dir, output_root, *, python_license, pyinstaller_license, tk_license,
                 skill_format='workbuddy', project=PROJECT):
     if skill_format not in {'workbuddy', 'standard'}:
         raise ValueError('Unknown Skill format')
     binary_dir, standalone_dir, output_root = map(lambda path: Path(path).resolve(), (binary_dir, standalone_dir, output_root))
     if output_root.exists():
         raise ValueError('Choose a new package output directory')
-    for path in (Path(python_license), Path(pyinstaller_license)):
+    for path in (Path(python_license), Path(pyinstaller_license), Path(tk_license)):
         if not path.is_file() or path.stat().st_size < 100:
             raise ValueError('A complete Python and PyInstaller license is required')
-    capabilities = {}
+    capabilities, desktops = {}, {}
     for client in ('wechat', 'wecom'):
         script = standalone_dir / (client + '_daily_report.py')
         if script.read_text(encoding='utf-8') != standalone_source(client, project):
             raise ValueError('The standalone script is stale; regenerate it before packaging')
         capabilities[client] = verify_binary(binary_dir / (client + '-daily-report.exe'), client)
+        desktops[client] = verify_desktop(binary_dir / (client + '-daily-report-ui.exe'), client)
     output_root.mkdir(parents=True)
     products = []
     for client, title in (('wechat', 'WeChat'), ('wecom', 'WeCom')):
@@ -139,14 +163,17 @@ def package_all(binary_dir, standalone_dir, output_root, *, python_license, pyin
             binary_name = client + '-daily-report.exe'
             relative = ('bin/' if kind == 'skill' else '') + binary_name
             _copy(binary_dir / binary_name, directory / relative)
+            ui_relative = ('bin/' if kind == 'skill' else '') + client + '-daily-report-ui.exe'
+            _copy(binary_dir / (client + '-daily-report-ui.exe'), directory / ui_relative)
             _copy(standalone_dir / (client + '_daily_report.py'), directory / ('scripts/' if kind == 'skill' else '') / (client + '_daily_report.py'))
             runtime = {'schemaVersion': 1, 'role': 'daily_report', 'version': DAILY_REPORT_VERSION,
                        'client': client, 'skillName': client + '-daily-report', 'platform': 'Windows x64',
                        'exeRelativePath': relative, 'exeSha256': sha256(directory / relative),
+                       'desktopRelativePath': ui_relative, 'desktopSha256': sha256(directory / ui_relative),
                        'requiresPythonInstallation': False, 'requiresRepository': False,
                        'containsKeys': False, 'containsChatData': False, 'containsLocalSettings': False}
             (directory / 'runtime.json').write_text(json.dumps(runtime, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-            launcher = '@echo off\r\nchcp 65001 >nul\r\n"%~dp0' + relative.replace('/', '\\') + '" --interactive\r\npause\r\n'
+            launcher = '@echo off\r\nstart "" "%~dp0' + ui_relative.replace('/', '\\') + '" --desktop\r\n'
             (directory / 'Start.cmd').write_bytes(launcher.encode('ascii'))
             if kind == 'skill':
                 template = project / 'skills' / (client + '-daily-report')
@@ -161,12 +188,14 @@ def package_all(binary_dir, standalone_dir, output_root, *, python_license, pyin
                 (directory / 'README.md').write_text(usage(client), encoding='utf-8')
             _copy(Path(python_license), directory / 'licenses/Python-LICENSE.txt')
             _copy(Path(pyinstaller_license), directory / 'licenses/PyInstaller-COPYING.txt')
+            _copy(project / 'scripts/licenses/Tcl-8.6.15-license.terms', directory / 'licenses/Tcl-license.terms')
+            _copy(Path(tk_license), directory / 'licenses/Tk-license.terms')
             notice = (project.parent / 'THIRD_PARTY_NOTICES.md').read_text(encoding='utf-8')
             notice = notice.replace('(docs/', '(https://github.com/JJ704sd/WXData-Analysis-Beta/blob/main/docs/')
             (directory / 'licenses/SOURCE-NOTICE.md').write_text(notice, encoding='utf-8')
             products.append(_finish(directory, client=client, kind=kind, format_name=skill_format if kind == 'skill' else None))
     matrix = {'schemaVersion': 1, 'role': 'daily_report_delivery', 'version': DAILY_REPORT_VERSION,
-              'products': products, 'capabilities': capabilities,
+              'products': products, 'capabilities': capabilities, 'desktopComponents': desktops,
               'realAccountValidation': False, 'hostSkillImportValidation': False}
     (output_root / 'release-matrix.json').write_text(json.dumps(matrix, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return matrix
@@ -179,10 +208,11 @@ def main(argv=None):
     parser.add_argument('--output-root', required=True, type=Path)
     parser.add_argument('--python-license', required=True, type=Path)
     parser.add_argument('--pyinstaller-license', required=True, type=Path)
+    parser.add_argument('--tk-license', required=True, type=Path)
     parser.add_argument('--skill-format', choices=('workbuddy', 'standard'), default='workbuddy')
     args = parser.parse_args(argv)
     print(json.dumps(package_all(args.binary_dir, args.standalone_dir, args.output_root,
-          python_license=args.python_license, pyinstaller_license=args.pyinstaller_license,
+          python_license=args.python_license, pyinstaller_license=args.pyinstaller_license, tk_license=args.tk_license,
           skill_format=args.skill_format), ensure_ascii=False))
 
 
