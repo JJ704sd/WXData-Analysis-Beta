@@ -121,6 +121,8 @@ class DailyReportApp:
         self.folder_button.pack(side='left', padx=8)
         self.copy_button = self._button(tools, '复制结果路径', self.copy_result, state='disabled')
         self.copy_button.pack(side='left')
+        self.gaps_button = self._button(tools, '查看待补充信息', self.open_gaps, state='disabled')
+        self.gaps_button.pack(side='left', padx=8)
         self._button(tools, '排查日志', self.open_log, style='Quiet.TButton').pack(side='right')
 
     def _build_sources(self):
@@ -449,12 +451,16 @@ class DailyReportApp:
         overview = result['overview']
         for variable, key in zip(self.metrics, ('messages', 'activeConversations', 'personalFollowups', 'messagesWithGaps')):
             variable.set(f'{overview[key]:,}')
+        notices = result.get('notices', [])
+        scope_note = ' '.join(notices[:2]) + (' 更多提示请在 HTML 日报中查看。' if len(notices) > 2 else '')
         self.result_note.set(f"{result['date']} · 仅统计选定材料。待跟进与处理信号需人工核对。" +
+                             ('\n' + scope_note if scope_note else '') +
                              ('' if report else ' 列表预览暂不可用，请打开 HTML 日报。'))
         self.status.set('日报已生成，可打开完整报告或继续选择其他日期。')
         self.clear_filters()
         for button in (self.open_report_button, self.folder_button, self.copy_button):
             button.configure(state='normal')
+        self.gaps_button.configure(state='normal' if result.get('contentGapCount', 0) else 'disabled')
         self.tabs.select(self.results)
 
     def clear_filters(self):
@@ -532,6 +538,14 @@ class DailyReportApp:
             except (OSError, ValueError):
                 self._log('open_failed', traceback.format_exc())
                 self.status.set('文件已生成，自动打开未成功；可复制结果路径手动打开。')
+
+    def open_gaps(self):
+        if self.result:
+            try:
+                self.opener(Path(self.result['htmlFile']).resolve().as_uri() + '#content-gaps')
+            except (OSError, ValueError):
+                self._log('open_gaps_failed', traceback.format_exc())
+                self.status.set('暂时无法打开待补充信息，可复制结果路径后打开 HTML 日报查看。')
 
     def copy_result(self):
         if self.result:

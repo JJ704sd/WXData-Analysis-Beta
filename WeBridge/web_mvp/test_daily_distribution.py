@@ -15,6 +15,7 @@ from offline_daily import build_daily_report
 from package_daily_reports import workbuddy_skill
 from test_daily_reports import DAY, formal_export, message
 from test_daily_history import unicode_export
+from test_daily_business import GapCards, gap_export
 
 
 def clean_environment():
@@ -60,6 +61,24 @@ def quoted_requests(base, client):
         message('same-second', '请确认方案', time='2026-10-27T10:00:00+08:00'),
         message('same-reply', '已处理', own=True, kind='quote', time='2026-10-27T10:00:00+08:00',
                 quote={'sourceMessageId': 'same-second'})], client=client)
+
+
+def assert_business_report(test, process, output, *, empty_day):
+    test.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+    receipt = json.loads(process.stdout)
+    test.assertTrue(receipt['ok'])
+    test.assertEqual(receipt['contentGapCount'], 3)
+    test.assertEqual(receipt['overview']['messages'], 0 if empty_day else 2)
+    test.assertEqual(receipt['overview']['messagesWithGaps'], 0 if empty_day else 1)
+    if empty_day:
+        test.assertTrue(any('未找到当日消息' in value for value in receipt['notices']))
+    report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+    test.assertEqual(report['followups'], [])
+    test.assertEqual(report['riskClues'], [])
+    test.assertEqual(len(report['contentGaps']), 3)
+    html = (output / 'report.html').read_text(encoding='utf-8')
+    test.assertEqual(len(GapCards(html).cards), 3)
+    test.assertIn('id="content-gaps"', html)
 
 
 class StandaloneDistributionTests(unittest.TestCase):
@@ -158,6 +177,16 @@ class StandaloneDistributionTests(unittest.TestCase):
                 self.assertRegex(header, r'(?m)^' + field + ': .+')
             self.assertIn('version: "' + DAILY_REPORT_VERSION + '"', header)
             self.assertIn('name: ' + client + '-daily-report', header)
+
+    def test_single_files_preserve_scope_notices_and_content_gap_navigation(self):
+        for client in ('wechat', 'wecom'):
+            source = gap_export(self.base, client, client=client)
+            for empty_day, day in ((False, DAY), (True, '2026-10-28')):
+                with self.subTest(client=client, empty_day=empty_day):
+                    output = self.base / (client + '-' + day)
+                    result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', day,
+                                          '--export-root', source, '--output', output], cwd=self.base)
+                    assert_business_report(self, result, output, empty_day=empty_day)
 
     def test_tracked_single_files_match_the_maintained_generation(self):
         for client in ('wechat', 'wecom'):
@@ -328,6 +357,20 @@ class WindowsDeliveryTests(unittest.TestCase):
                         self.assertIn(chr(0xDC00), by_id['attachment']['content']['attachmentContent']['text'])
                         self.assertEqual(by_id['after']['text'], '异常内容之后的消息完整保留')
                         self.assertIn('\\udc00', (output / 'report.html').read_text(encoding='utf-8'))
+
+
+    def test_native_business_scope_and_gap_reports_match_both_delivery_formats(self):
+        for client in ('wechat', 'wecom'):
+            source = gap_export(self.base, client + '-business', client=client)
+            for kind in ('portable', 'skill'):
+                directory = self.packages[client, kind]
+                runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                for empty_day, day in ((False, DAY), (True, '2026-10-28')):
+                    with self.subTest(client=client, delivery=kind, empty_day=empty_day):
+                        output = self.base / (client + '-' + kind + '-business-' + day)
+                        result = run_process([directory / runtime['exeRelativePath'], '--date', day,
+                                              '--export-root', source, '--output', output], cwd=self.base)
+                        assert_business_report(self, result, output, empty_day=empty_day)
 
 
 if __name__ == '__main__':

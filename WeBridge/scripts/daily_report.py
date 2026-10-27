@@ -56,6 +56,7 @@ def main(client, argv=None, *, standalone=False):
                           'readsLiveClient': False, 'callsModelAPI': False,
                           'standalone': standalone, 'requiresRepository': not standalone,
                           'desktopUI': True,
+                          'scopeNotices': True, 'contentGapReview': True,
                           'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or not arguments:

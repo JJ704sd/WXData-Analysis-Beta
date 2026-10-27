@@ -2,7 +2,7 @@
 
 Windows 本地个微／企微聊天分析助手，提供群聊和私聊四类采集入口，以及两个消息日报脚本。读取用户选择的数据库副本，解析消息和附件，生成带出处的阅读材料，人工复核后导出 JSON、JSONL 和 Markdown。日报脚本将同一账号的已复核导出整理成每日概览、待跟进线索和可交互的 HTML；私聊还支持画像候选复核和版本管理。
 
-当前版本：**群聊 v71／Skill 1.51.5，私聊 1.20.3，日报 1.3.1**。版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。原四类采集助手的基线和修复见 [开发更新说明](docs/development-update.md)；日报提供单文件源码、Windows 便携 EXE 和两个 Skill，见下方 [日报使用入口](#生成每日消息日报)。
+当前版本：**群聊 v71／Skill 1.51.5，私聊 1.20.3，日报 1.4.0**。版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。原四类采集助手的基线和修复见 [开发更新说明](docs/development-update.md)；日报提供单文件源码、Windows 便携 EXE 和两个 Skill，见下方 [日报使用入口](#生成每日消息日报)。
 
 ## 从源码启动
 
@@ -31,16 +31,16 @@ uv pip install --python .venv\Scripts\python.exe -r WeBridge\requirements.txt
 
 ## 生成每日消息日报
 
-直接从 [日报 1.3.1 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.3.1) 下载对应包。Windows x64 便携包和 Skill 均内置 Python，无需安装 Python、pip 或完整仓库。
+直接从 [日报 1.4.0 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.4.0) 下载对应包。Windows x64 便携包和 Skill 均内置 Python，无需安装 Python、pip 或完整仓库。
 
 | 用途 | 个微 | 企微 |
 | --- | --- | --- |
-| 直接运行 | `WeChat-Daily-Report-1.3.1-Windows-x64.zip` | `WeCom-Daily-Report-1.3.1-Windows-x64.zip` |
-| WorkBuddy 等宿主导入 | `WeChat-Daily-Report-Skill-1.3.1-Windows-x64.zip` | `WeCom-Daily-Report-Skill-1.3.1-Windows-x64.zip` |
+| 直接运行 | `WeChat-Daily-Report-1.4.0-Windows-x64.zip` | `WeCom-Daily-Report-1.4.0-Windows-x64.zip` |
+| WorkBuddy 等宿主导入 | `WeChat-Daily-Report-Skill-1.4.0-Windows-x64.zip` | `WeCom-Daily-Report-Skill-1.4.0-Windows-x64.zip` |
 
 便携包解压后双击 `Start.cmd` 或 `*-daily-report-ui.exe` 打开桌面窗口：添加多个已复核目录，用日历或“今天／昨天”选择日期，选择保存位置并生成。生成在后台运行，可取消；完成后可搜索、筛选待跟进线索，打开 HTML 日报或复制结果路径。界面只展示业务概览、姓名和请求，技术追踪留在排查日志中。
 
-1.3.1 根据历史编码报错修复日报中断、桌面搜索和命令行回执：异常字符保留可见标记并提示核对，正常中文、表情和后续消息继续保留。引用关联、资源释放和目录占用的既有修复已定向复验，见 [历史故障对应处理](docs/daily-history-fixes.md)。
+1.4.0 增加材料范围提醒与“待补充信息”查阅：当天为零条时提醒核对日期，仍保留回看期内的待跟进；附件、转发和时间待确认的内容缺口可搜索、按日期筛选并跳转原文。当天缺口数与回看总数分别展示，技术标识继续留在日志。历史编码、引用与占用修复见 [对应处理记录](docs/daily-history-fixes.md)。
 
 WorkBuddy 在“添加技能 → 上传技能”中分别导入 Skill ZIP，宿主需能执行本机 Windows 程序并访问所选目录；[官方导入说明](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market)。Skill 使用命令行 EXE 自动生成，无需启用 PowerShell 脚本；包内也提供桌面入口。纯网页聊天及远端 Linux 沙箱不能直接使用 Windows EXE。
 
@@ -61,7 +61,7 @@ WorkBuddy 在“添加技能 → 上传技能”中分别导入 Skill ZIP，宿�
 
 成功后直接打开 `report.html`：主界面突出业务概览、待跟进事项、处理进展和需补充信息，支持搜索、筛选及展开原文。消息 ID、来源路径、复核编号、摘要和关联规则保存在 `diagnostics.jsonl`；同目录还有 `report.json`、`evidence.jsonl` 和 `manifest.json`。输出必须使用新目录。
 
-日报按北京时间统计当天消息，默认回看含当天的 7 天寻找请求与后续回应。群内明确发给别人的请求不计入本人线索；“稍后回复”仍待跟进，完成或取消作为待核对信号单列。只统计所选导出，不估算历史未读。完整参数和格式见 [日报脚本说明](docs/daily-reports.md)，1.3.1 的源码、EXE、包和界面检查见 [日报分发验证](docs/daily-delivery-validation.json)。WorkBuddy 元数据已按官方要求适配，客户端内实际导入与真实账号材料尚未验证。
+日报按北京时间统计当天消息，默认回看含当天的 7 天寻找请求与后续回应。群内明确发给别人的请求不计入本人线索；“稍后回复”仍待跟进，完成或取消作为待核对信号单列。只统计所选导出，不估算历史未读。完整参数和格式见 [日报脚本说明](docs/daily-reports.md)，1.4.0 的源码、EXE、包和界面检查见 [日报分发验证](docs/daily-delivery-validation.json)。WorkBuddy 元数据已按官方要求适配，客户端内实际导入与真实账号材料尚未验证。
 
 ## 开发和构建
 

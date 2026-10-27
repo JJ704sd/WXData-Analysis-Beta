@@ -14,6 +14,7 @@ from offline_daily import DailyReportCancelled, DailyReportError, build_daily_re
 from offline_daily_ui import DailyReportApp
 from test_daily_distribution import source_pair
 from test_daily_history import unicode_export
+from test_daily_business import gap_export
 from test_daily_reports import DAY, formal_export, message
 
 
@@ -188,6 +189,22 @@ class DailyDesktopTests(unittest.TestCase):
         self.assertIn('\\ud800', detail)
         self.assertIn('37/KG 💬', detail)
         self.assertIn('字符', detail)
+
+    def test_scope_warning_and_gap_review_are_available_from_results(self):
+        app = self.create_app()
+        empty_day = formal_export(self.base, 'old-only', [message('old', '请确认报价', time='2026-10-26T18:00:00+08:00')])
+        result = build_daily_report([empty_day], client='wechat', day=DAY, output=self.base / 'empty-day-report')
+        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+        app.present_result(result, report)
+        self.assertIn('未找到当日消息', app.result_note.get())
+        self.assertIn('disabled', app.gaps_button.state())
+        source = gap_export(self.base, 'partial-content')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'partial-content-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        self.assertNotIn('disabled', app.gaps_button.state())
+        self.assertEqual(app.metrics[3].get(), '1')
+        app.gaps_button.invoke()
+        self.assertEqual(self.opened[-1], Path(result['htmlFile']).resolve().as_uri() + '#content-gaps')
 
     def test_unresolved_sender_name_keeps_identifier_out_of_business_preview(self):
         app = self.create_app()

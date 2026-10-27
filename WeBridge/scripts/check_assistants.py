@@ -28,6 +28,7 @@ TARGETS = (
     'test_daily_ui',
     'test_daily_refinements',
     'test_daily_history',
+    'test_daily_business',
 )
 
 

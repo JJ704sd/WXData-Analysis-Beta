@@ -422,6 +422,18 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     _checkpoint(cancel)
     _progress(progress, 'organizing', messages=len(records))
     today = [row for row in records if row['time'] and day_start <= _moment(row['time']) < end]
+    notices = []
+    if not today:
+        notices.append('所选材料中未找到当日消息，请确认日报日期和导出范围；不能据此判断当天没有消息。')
+    notices.extend(limitations)
+    if undated:
+        notices.append(f'有 {undated} 条消息时间待确认，未计入当天概览和待跟进。')
+    today_ids = {row['evidenceId'] for row in today}
+    content_gaps = [{'evidenceId': row['evidenceId'],
+                     'dateScope': 'daily' if row['evidenceId'] in today_ids else 'undated' if not row['time'] else 'lookback'}
+                    for row in records if row['issues']]
+    if content_gaps:
+        notices.append(f'回看材料中有 {len(content_gaps)} 条消息的信息待补充，可在“待补充信息”中查找并核对原文。')
     followups = _followups(records, tuple(name.strip() for name in my_names if name.strip()), progress=progress, cancel=cancel)
     hours = Counter(_moment(row['time']).hour for row in today)
     directions = Counter(row['direction'] for row in today)
@@ -455,11 +467,11 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
                            'kinds': dict(Counter(row['kind'] for row in today)),
                            'messagesWithGaps': sum(bool(row['issues']) for row in today), 'undatedMessages': undated,
                            'duplicateOccurrences': duplicates, 'personalFollowups': sum(item['target'] == 'self' and item['state'] not in {'completion_signal', 'withdrawal_signal'} for item in followups)},
-              'conversations': conversations, 'followups': followups, 'topics': topics,
+              'conversations': conversations, 'followups': followups, 'topics': topics, 'contentGaps': content_gaps,
               'riskClues': [{'evidenceId': row['evidenceId'], 'matches': sorted(set(URGENCY.findall(_primary(row))))}
                             for row in today if row['direction'] != 'outgoing' and URGENCY.search(_primary(row))],
               'sources': [{key: str(value) if key == 'root' else value for key, value in source.items()} for source in sources],
-              'limitations': list(dict.fromkeys(limitations)), 'unread': {'available': False},
+              'limitations': list(dict.fromkeys(limitations)), 'notices': notices, 'unread': {'available': False},
               'evidenceFile': 'evidence.jsonl', 'diagnosticsFile': 'diagnostics.jsonl',
               'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
     from offline_daily_html import render_report
@@ -486,7 +498,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
             for item in followups:
                 audit('followup_linked', **{key: item[key] for key in
                       ('id', 'evidenceId', 'chatId', 'target', 'targetBasis', 'state', 'replyEvidenceId', 'replyBasis')})
-            audit('scope_limitations', limitations=report['limitations'])
+            audit('scope_limitations', limitations=report['limitations'], notices=notices)
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                      for path in sorted(stage.iterdir())]
@@ -500,4 +512,5 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     return {'ok': True, 'client': client, 'date': day, 'version': version, 'output': str(destination.resolve()),
             'htmlFile': str(destination / 'report.html'), 'jsonFile': str(destination / 'report.json'),
             'evidenceFile': str(destination / 'evidence.jsonl'),
-            'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview']}
+            'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview'],
+            'notices': notices, 'contentGapCount': len(content_gaps)}

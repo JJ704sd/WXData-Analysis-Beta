@@ -180,9 +180,10 @@ class DailyReportTests(unittest.TestCase):
         batch.mkdir()
         formal_export(batch, 'chat-one', [message('a', '请确认报价')])
         (batch / 'batch.json').write_text(json.dumps({'groups': [{'directory': 'chat-one'}], 'failed': [{'chatId': 'missing'}]}), encoding='utf-8')
-        _, report, _ = self.generate([batch])
+        result, report, _ = self.generate([batch])
         self.assertEqual(report['overview']['messages'], 1)
         self.assertTrue(any('批次' in item for item in report['limitations']))
+        self.assertTrue(any('批次' in item for item in result['notices']))
 
     def test_review_checks_must_be_actual_booleans(self):
         root = formal_export(self.base, 'checks', [message('m1', '请确认报价')])
