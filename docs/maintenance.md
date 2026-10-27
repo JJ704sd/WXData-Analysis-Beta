@@ -13,9 +13,12 @@ flowchart LR
     E --> F[人工复核与正式导出]
     F --> G[阅读材料和本地统计]
     F --> H[私聊候选分析与再次确认]
+    F --> I[个微／企微每日概览与 HTML 日报]
 ```
 
 `DesktopSession` 连接两种客户端读取器和共用导出流程。群聊与私聊通过 `conversation_mode` 分开选择、恢复和复核。画像的来源、候选、确认版本与基线摘要沿用原有合同；本轮没有迁移旧库。
+
+两个日报入口共用 `offline_daily.py` 和 `offline_daily_html.py`，读取正式导出，不增加数据库读取或密钥提取路径。`DAILY_REPORT_VERSION` 独立维护日报版本，现有四类包的构建矩阵不包含日报脚本。输入合同、输出格式与定向验证命令见 [日报脚本说明](daily-reports.md)。
 
 ## 更新版本
 

@@ -1,4 +1,4 @@
-"""Run the bounded synthetic acceptance suite for the four archive products."""
+"""Run the bounded synthetic acceptance suite for archive and daily-report products."""
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
@@ -22,6 +22,7 @@ TARGETS = (
     'test_four_exports66', 'test_private_chat_distribution', 'test_private_chat_integration',
     'test_private_evidence_integrity', 'test_runtime_identity',
     'test_windows_hook_smoke.SourceBindingTests',
+    'test_daily_reports',
 )
 
 

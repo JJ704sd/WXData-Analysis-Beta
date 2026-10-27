@@ -1,9 +1,10 @@
-"""Single version source for the four supported archive products."""
+"""Single version source for archive products and local daily-report scripts."""
 import json
 
 GROUP_RELEASE = 'v71'
 GROUP_VERSION = '1.51.5'
 PRIVATE_VERSION = '1.20.3'
+DAILY_REPORT_VERSION = '1.0.0'
 
 
 def release_matrix():
