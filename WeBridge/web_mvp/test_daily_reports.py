@@ -220,10 +220,27 @@ class DailyReportTests(unittest.TestCase):
         self.assertIn('id="' + evidence[0]['evidenceId'] + '"', body)
         self.assertIn(payload, evidence[0]['text'])
         manifest = json.loads((self.base / 'report/manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual({row['path'] for row in manifest['files']}, {'report.html', 'report.json', 'evidence.jsonl'})
+        self.assertEqual({row['path'] for row in manifest['files']}, {'report.html', 'report.json', 'evidence.jsonl', 'diagnostics.jsonl'})
         for row in manifest['files']:
             self.assertEqual(row['sha256'], hashlib.sha256((self.base / 'report' / row['path']).read_bytes()).hexdigest())
         self.assertFalse(report['unread']['available'])
+
+    def test_business_html_keeps_trace_ids_in_diagnostics(self):
+        root = formal_export(self.base, 'business-view', [message('internal-message-token', '请确认新报价',
+            kind='quote', quote={'message': {'id': 'internal-quote-token', 'text': '旧报价仅作参考', 'senderId': 'internal-sender-token'}})])
+        result, report, evidence = self.generate([root])
+        body = Path(result['htmlFile']).read_text(encoding='utf-8')
+        for value in ('internal-message-token', 'internal-quote-token', 'internal-sender-token', report['sources'][0]['sourceId'],
+                      report['sources'][0]['reviewId'], str(root), 'sourceFingerprint', 'source_id_unavailable'):
+            self.assertNotIn(value, body)
+        self.assertIn('请确认新报价', body)
+        self.assertIn('旧报价仅作参考', body)
+        self.assertIn('诊断日志', body)
+        diagnostic = Path(result['diagnosticsFile']).read_text(encoding='utf-8')
+        self.assertIn('internal-message-token', diagnostic)
+        self.assertIn(report['sources'][0]['reviewId'], diagnostic)
+        self.assertIn(report['sources'][0]['sourceId'], diagnostic)
+        self.assertIn('internal-quote-token', json.dumps(evidence, ensure_ascii=False))
 
     def test_both_client_clis_report_capabilities_and_generate_real_files(self):
         for client in ('wechat', 'wecom'):

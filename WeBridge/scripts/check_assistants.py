@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -23,6 +24,7 @@ TARGETS = (
     'test_private_evidence_integrity', 'test_runtime_identity',
     'test_windows_hook_smoke.SourceBindingTests',
     'test_daily_reports',
+    'test_daily_distribution.StandaloneDistributionTests',
 )
 
 
@@ -35,12 +37,15 @@ def main(argv=None):
     suite = unittest.defaultTestLoader.loadTestsFromNames(targets)
     started = time.monotonic()
     result = unittest.TextTestRunner(verbosity=2, buffer=True).run(suite)
+    native_run = (sys.platform == 'win32' and bool(os.environ.get('DAILY_DELIVERY_ROOT')) and
+                  any(target == 'test_daily_distribution' or target.startswith('test_daily_distribution.WindowsDeliveryTests')
+                      for target in targets))
     report = {
         'schemaVersion': 1, 'date': datetime.now(timezone(timedelta(hours=8))).date().isoformat(), 'targets': targets,
         'testsRun': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors),
         'skipped': len(result.skipped), 'seconds': round(time.monotonic() - started, 2),
         'ok': result.wasSuccessful(), 'usesSyntheticData': True,
-        'realAccountValidation': False, 'compiledBinaryValidation': False,
+        'realAccountValidation': False, 'compiledBinaryValidation': native_run and result.wasSuccessful(),
         'python': sys.version.split()[0], 'platform': sys.platform,
         'failedTests': [test.id() for test, _ in (*result.failures, *result.errors)],
     }

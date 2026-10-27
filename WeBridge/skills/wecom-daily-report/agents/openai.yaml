@@ -1,0 +1,4 @@
+interface:
+  display_name: "企微本地消息日报"
+  short_description: "将已复核的企微群聊和私聊导出整理成每日概览、待跟进线索与可追溯 HTML 日报"
+  default_prompt: "使用 $wecom-daily-report 整理我指定的企微导出，生成当天概览、待跟进线索和 HTML 日报。"

@@ -1,5 +1,6 @@
 """Shared CLI for client-bound daily reports; never reads a live client."""
 import argparse
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sys
@@ -12,7 +13,28 @@ from chat_release import DAILY_REPORT_VERSION
 from offline_daily import DailyReportError, build_daily_report
 
 
-def main(client, argv=None):
+def _interactive_values(args, label):
+    if not sys.stdin.isatty():
+        raise DailyReportError('交互模式需要本机控制台；宿主请传入导出目录、日期和新的输出目录。')
+    print(label + '本地消息日报：选择原助手已人工确认的正式导出或批量导出目录。')
+    if not args.export_root:
+        print('每行输入一个目录，全部输入后按空行结束；可直接粘贴带引号的路径。')
+        while True:
+            value = input('导出目录：').strip().strip('"')
+            if not value:
+                break
+            args.export_root.append(Path(value))
+    now = datetime.now(timezone(timedelta(hours=8)))
+    if not args.date:
+        args.date = input('日报日期 [' + now.date().isoformat() + ']：').strip() or now.date().isoformat()
+    if not args.output:
+        default = Path.home() / 'Documents' / 'LocalChatDailyReports' / (args.date + '-' + now.strftime('%H%M%S') + '-' + label)
+        args.output = Path(input('新的输出目录 [' + str(default) + ']：').strip().strip('"') or default)
+    if not args.export_root:
+        raise DailyReportError('未选择导出目录。')
+
+
+def main(client, argv=None, *, standalone=False):
     label = '个微' if client == 'wechat' else '企微'
     parser = argparse.ArgumentParser(description=label + '每日概览、待跟进线索与本地 HTML 日报；读取已复核导出。')
     parser.add_argument('--export-root', action='append', type=Path, default=[], help='正式导出或批次目录；可重复')
@@ -21,14 +43,25 @@ def main(client, argv=None):
     parser.add_argument('--lookback-days', type=int, default=7, help='待跟进回看天数，含当天，默认 7')
     parser.add_argument('--my-name', action='append', default=[], help='用户明确提供的群内本人称呼，仅作点名线索；可重复')
     parser.add_argument('--capabilities', action='store_true', help='仅查询版本和能力，不读取材料')
-    args = parser.parse_args(argv)
+    parser.add_argument('--interactive', action='store_true', help='在本机控制台逐项输入导出目录、日期和输出目录')
+    parser.add_argument('--version', action='version', version=DAILY_REPORT_VERSION)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    args = parser.parse_args(arguments)
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
         print(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION,
                           'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports',
-                          'readsLiveClient': False, 'callsModelAPI': False}, ensure_ascii=False))
+                          'readsLiveClient': False, 'callsModelAPI': False,
+                          'standalone': standalone, 'requiresRepository': not standalone,
+                          'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
         return 0
+    try:
+        if args.interactive or (not arguments and sys.stdin.isatty()):
+            _interactive_values(args, label)
+    except (DailyReportError, EOFError, KeyboardInterrupt) as error:
+        print(json.dumps({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}, ensure_ascii=False))
+        return 2
     if not args.export_root or not args.date or not args.output:
         parser.error('需要 --export-root、--date 和 --output。')
     try:

@@ -2,7 +2,7 @@
 
 Windows 本地个微／企微聊天分析助手，提供群聊和私聊四类采集入口，以及两个消息日报脚本。读取用户选择的数据库副本，解析消息和附件，生成带出处的阅读材料，人工复核后导出 JSON、JSONL 和 Markdown。日报脚本将同一账号的已复核导出整理成每日概览、待跟进线索和可交互的 HTML；私聊还支持画像候选复核和版本管理。
 
-当前源码版本：**群聊 v71／Skill 1.51.5，私聊 1.20.3，日报 1.0.0**。四类工具共用最新解析代码；版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。具体基线和修复见 [开发更新说明](docs/development-update.md)。本仓库提供源码，运行包需自行构建。
+当前版本：**群聊 v71／Skill 1.51.5，私聊 1.20.3，日报 1.1.0**。版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。原四类采集助手的基线和修复见 [开发更新说明](docs/development-update.md)；日报提供单文件源码、Windows 便携 EXE 和两个 Skill，见下方 [日报使用入口](#生成每日消息日报)。
 
 ## 从源码启动
 
@@ -31,22 +31,33 @@ uv pip install --python .venv\Scripts\python.exe -r WeBridge\requirements.txt
 
 ## 生成每日消息日报
 
-环境安装同上。将下列示例输入路径替换为原助手已经人工确认的正式导出目录，或含 `batch.json` 的批量导出目录；两个脚本分别固定为个微、企微，可重复传入 `--export-root` 合并同一账号的群聊与私聊。
+直接从 [日报 1.1.0 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.1.0) 下载对应包。Windows x64 便携包和 Skill 均内置 Python，无需安装 Python、pip 或完整仓库。
+
+| 用途 | 个微 | 企微 |
+| --- | --- | --- |
+| 直接运行 | `WeChat-Daily-Report-1.1.0-Windows-x64.zip` | `WeCom-Daily-Report-1.1.0-Windows-x64.zip` |
+| WorkBuddy 等宿主导入 | `WeChat-Daily-Report-Skill-1.1.0-Windows-x64.zip` | `WeCom-Daily-Report-Skill-1.1.0-Windows-x64.zip` |
+
+便携包解压后双击 `Start.cmd`，输入已复核的导出目录、日期和新的输出目录。WorkBuddy 在“添加技能 → 上传技能”中分别导入 Skill ZIP，宿主需能执行本机 Windows 程序并访问所选目录；[官方导入说明](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market)。Skill 直接调用 EXE，无需启用 PowerShell 脚本。纯网页聊天及远端 Linux 沙箱不能直接使用 Windows EXE。
+
+也可单独下载 [个微单文件脚本](standalone/wechat_daily_report.py) 或 [企微单文件脚本](standalone/wecom_daily_report.py)：只需 Python 3.12+，无需 pip 和仓库共用模块；已验证环境为 Python 3.14.6。
+
+命令行使用示例，在各自便携包的解压目录运行。将输入路径替换为原助手已经人工确认的正式导出目录，或含 `batch.json` 的批次；可重复传入 `--export-root` 合并同一账号的群聊与私聊。
 
 ```powershell
-.\.venv\Scripts\python.exe WeBridge\scripts\wechat_daily_report.py `
+& .\wechat-daily-report.exe `
   --export-root "D:\ChatExports\wechat-group-reviewed" `
   --export-root "D:\ChatExports\wechat-direct-reviewed" `
-  --date 2026-10-27 --output .runtime\reports\wechat-2026-10-27
+  --date 2026-10-27 --output "D:\DailyReports\wechat-2026-10-27"
 
-.\.venv\Scripts\python.exe WeBridge\scripts\wecom_daily_report.py `
+& .\wecom-daily-report.exe `
   --export-root "D:\ChatExports\wecom-reviewed-batch" `
-  --date 2026-10-27 --output .runtime\reports\wecom-2026-10-27
+  --date 2026-10-27 --output "D:\DailyReports\wecom-2026-10-27"
 ```
 
-成功后直接打开输出目录中的 `report.html`，可搜索、筛选线索并展开原文依据；同目录保留 `report.json`、`evidence.jsonl` 和文件摘要 `manifest.json`。输出必须使用新目录。两个入口依赖完整仓库，版本均为 1.0.0，未增加第三方依赖。
+成功后直接打开 `report.html`：主界面突出业务概览、待跟进事项、处理进展和需补充信息，支持搜索、筛选及展开原文。消息 ID、来源路径、复核编号、摘要和关联规则保存在 `diagnostics.jsonl`；同目录还有 `report.json`、`evidence.jsonl` 和 `manifest.json`。输出必须使用新目录。
 
-日报按北京时间统计当天消息，默认回看含当天的 7 天寻找请求与后续回应。群内明确发给别人的请求不计入本人线索；“稍后回复”仍保留待跟进，表示完成或取消的消息作为待核对信号单列。只统计所选导出，无法推断历史未读数。完整参数、规则和数据格式见 [日报脚本说明](docs/daily-reports.md)，本轮合成及浏览器检查见 [日报验证记录](docs/daily-reports-validation.json)。
+日报按北京时间统计当天消息，默认回看含当天的 7 天寻找请求与后续回应。群内明确发给别人的请求不计入本人线索；“稍后回复”仍待跟进，完成或取消作为待核对信号单列。只统计所选导出，不估算历史未读。完整参数和格式见 [日报脚本说明](docs/daily-reports.md)，1.1.0 的源码、EXE、包和界面检查见 [日报分发验证](docs/daily-delivery-validation.json)。WorkBuddy 元数据已按官方要求适配，客户端内实际导入与真实账号材料尚未验证。
 
 ## 开发和构建
 
@@ -72,8 +83,10 @@ uv pip install --python .venv\Scripts\python.exe -r WeBridge\scripts\requirement
 | 路径 | 用途 |
 | --- | --- |
 | `WeBridge/scripts/local_chat_bootstrap.py`、`local_chat_app.py` | 桌面启动和四类界面 |
-| `WeBridge/scripts/wechat_daily_report.py`、`wecom_daily_report.py` | 个微／企微日报入口 |
+| `WeBridge/scripts/wechat_daily_report.py`、`wecom_daily_report.py` | 仓库开发入口，使用共用模块 |
 | `WeBridge/web_mvp/offline_daily.py`、`offline_daily_html.py` | 已复核导出校验、每日整理与 HTML |
+| `standalone/` | 可独立复制的标准库单文件日报脚本，由维护源码自动生成 |
+| `WeBridge/scripts/build_daily_reports.ps1`、`package_daily_reports.py` | 日报 EXE、便携包与 WorkBuddy Skill 构建 |
 | `WeBridge/web_mvp/offline_desktop.py` | 数据源、解析、复核、恢复与批量导出 |
 | `WeBridge/web_mvp/wecom_*.py`、`database_adapter.py` | 双客户端快照及消息读取 |
 | `WeBridge/web_mvp/offline_analysis.py`、`offline_documents.py` | 可追溯语料、附件正文及缺口 |

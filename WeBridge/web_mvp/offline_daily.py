@@ -370,7 +370,8 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
                             for row in today if row['direction'] != 'outgoing' and URGENCY.search(_primary(row))],
               'sources': [{key: str(value) if key == 'root' else value for key, value in source.items()} for source in sources],
               'limitations': list(dict.fromkeys(limitations)), 'unread': {'available': False},
-              'evidenceFile': 'evidence.jsonl', 'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
+              'evidenceFile': 'evidence.jsonl', 'diagnosticsFile': 'diagnostics.jsonl',
+              'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
     from offline_daily_html import render_report
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.daily-report-', dir=destination.parent))
@@ -379,6 +380,20 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
         with (stage / 'evidence.jsonl').open('w', encoding='utf-8') as stream:
             for row in records:
                 stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+        with (stage / 'diagnostics.jsonl').open('w', encoding='utf-8') as stream:
+            def audit(event, **fields):
+                stream.write(json.dumps({'event': event, **fields}, ensure_ascii=False) + '\n')
+            audit('daily_report_created', version=version, client=client, date=day,
+                  createdAt=report['createdAt'], accountKey=report['accountKey'], lookback=report['lookback'])
+            for source in report['sources']:
+                audit('source_validated', **source)
+            for row in records:
+                audit('message_traced', **{key: row[key] for key in
+                      ('evidenceId', 'messageId', 'serverId', 'chatId', 'senderId', 'direction', 'kind', 'issues', 'issueReasons', 'sources')})
+            for item in followups:
+                audit('followup_linked', **{key: item[key] for key in
+                      ('id', 'evidenceId', 'chatId', 'target', 'targetBasis', 'state', 'replyEvidenceId', 'replyBasis')})
+            audit('scope_limitations', limitations=report['limitations'])
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                      for path in sorted(stage.iterdir())]
@@ -390,4 +405,5 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
             shutil.rmtree(stage)
     return {'ok': True, 'client': client, 'date': day, 'version': version, 'output': str(destination.resolve()),
             'htmlFile': str(destination / 'report.html'), 'jsonFile': str(destination / 'report.json'),
-            'evidenceFile': str(destination / 'evidence.jsonl'), 'overview': report['overview']}
+            'evidenceFile': str(destination / 'evidence.jsonl'),
+            'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview']}
