@@ -12,8 +12,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from offline_calendar import DatePicker
-from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report
-from offline_daily_html import _business_name
+from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report, display_text
+from offline_daily_html import _business_gaps, _business_name
 from offline_theme import (ACCENT, BODY, BORDER, CANVAS, CAPTION, DISPLAY, SURFACE,
                            TEXT, TEXT_MUTED, apply_theme, card)
 
@@ -476,19 +476,19 @@ class DailyReportApp:
             if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
                 continue
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-            if query and query not in ' '.join((name, row['senderName'], row['text'], row['stateLabel'])).casefold():
+            if query and query not in display_text(' '.join((name, row['senderName'], row['text'], row['stateLabel']))).casefold():
                 continue
             rows.append((index, row, name))
         for index, row, name in rows[:500]:
-            self.followup_tree.insert('', 'end', iid=str(index), values=(name, row['senderName'],
-                row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140]))
+            self.followup_tree.insert('', 'end', iid=str(index), values=tuple(display_text(value) for value in
+                (name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140])))
         self.result_count.set(f'匹配 {len(rows):,} 条 · ' + ('展示前 500 条，其余请在 HTML 日报中查看' if len(rows) > 500 else '选中线索查看完整请求'))
         self._set_detail('当前筛选下没有线索。' if not rows else '选择一条线索查看完整请求；处理进展需结合 HTML 日报的原文依据核对。')
 
     def _set_detail(self, text):
         self.detail.configure(state='normal')
         self.detail.delete('1.0', 'end')
-        self.detail.insert('1.0', text)
+        self.detail.insert('1.0', display_text(text))
         self.detail.configure(state='disabled')
 
     def show_detail(self, _event=None):
@@ -497,7 +497,8 @@ class DailyReportApp:
         if selected:
             row = self.followups[int(selected[0])]
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-            self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}")
+            note = '\n\n' + _business_gaps({'issues': row['contentIssues']}) if row.get('contentIssues') else ''
+            self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}" + note)
 
     @staticmethod
     def _open_path(path):

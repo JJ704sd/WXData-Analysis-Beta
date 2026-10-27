@@ -14,6 +14,7 @@ from chat_release import DAILY_REPORT_VERSION
 from offline_daily import build_daily_report
 from package_daily_reports import workbuddy_skill
 from test_daily_reports import DAY, formal_export, message
+from test_daily_history import unicode_export
 
 
 def clean_environment():
@@ -128,6 +129,23 @@ class StandaloneDistributionTests(unittest.TestCase):
                 report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
                 states = {item['text']: item['state'] for item in report['followups']}
                 self.assertEqual(states, {'请确认报价': 'completion_signal', '请安排发货': 'needs_response', '请确认方案': 'completion_signal'})
+
+    def test_single_files_keep_partial_text_and_emit_valid_utf8_json_metadata(self):
+        for client in ('wechat', 'wecom'):
+            with self.subTest(client=client):
+                source = unicode_export(self.base, client + '-partial', client=client, kind='legacy-' + chr(0xD800))
+                output = self.base / (client + '-partial-report')
+                result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
+                                      '--export-root', source, '--output', output], cwd=self.base)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                receipt = json.loads(result.stdout)
+                self.assertTrue(receipt['ok'])
+                self.assertEqual(receipt['overview']['kinds']['legacy-' + chr(0xD800)], 1)
+                self.assertEqual(receipt['overview']['messagesWithGaps'], 2)
+                evidence = [json.loads(line) for line in (output / 'evidence.jsonl').read_text(encoding='utf-8').splitlines()]
+                self.assertEqual(len(evidence), 3)
+                self.assertIn(chr(0xDC00), next(row for row in evidence if row['messageId'] == 'attachment')['content']['attachmentContent']['text'])
+                self.assertIn('\\udc00', (output / 'report.html').read_text(encoding='utf-8'))
 
     def test_client_binding_and_workbuddy_frontmatter_are_explicit(self):
         with self.assertRaises(ValueError):
@@ -285,6 +303,31 @@ class WindowsDeliveryTests(unittest.TestCase):
                     report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
                     states = {item['text']: item['state'] for item in report['followups']}
                     self.assertEqual(states, {'请确认报价': 'completion_signal', '请安排发货': 'needs_response', '请确认方案': 'completion_signal'})
+
+
+    def test_native_partial_characters_survive_portable_and_skill_reports(self):
+        for client in ('wechat', 'wecom'):
+            for metadata in (False, True):
+                name = client + ('-metadata' if metadata else '-text')
+                fields = {'kind': 'legacy-' + chr(0xD800)} if metadata else {}
+                source = unicode_export(self.base, name, client=client, **fields)
+                for kind in ('portable', 'skill'):
+                    with self.subTest(client=client, delivery=kind, metadata=metadata):
+                        directory = self.packages[client, kind]
+                        runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                        output = self.base / (name + '-' + kind + '-report')
+                        result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
+                                              '--export-root', source, '--output', output], cwd=self.base)
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        receipt = json.loads(result.stdout)
+                        self.assertTrue(receipt['ok'])
+                        self.assertEqual(receipt['overview']['messagesWithGaps'], 2)
+                        evidence = [json.loads(line) for line in (output / 'evidence.jsonl').read_text(encoding='utf-8').splitlines()]
+                        by_id = {row['messageId']: row for row in evidence}
+                        self.assertIn(chr(0xD800), by_id['request']['text'])
+                        self.assertIn(chr(0xDC00), by_id['attachment']['content']['attachmentContent']['text'])
+                        self.assertEqual(by_id['after']['text'], '异常内容之后的消息完整保留')
+                        self.assertIn('\\udc00', (output / 'report.html').read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':

@@ -57,8 +57,29 @@ STATE_LABELS = {
 }
 
 
+def display_text(value):
+    """Keep lone UTF-16 units visible without losing the surrounding text."""
+    return str(value).encode('utf-8', 'backslashreplace').decode('utf-8')
+
+
+def json_text(value, **options):
+    # JSON escapes preserve the original units on readback. Applying this after
+    # serialization keeps a literal backslash-u distinct from an invalid unit.
+    return display_text(json.dumps(value, ensure_ascii=False, **options))
+
+
+def _contains_surrogate(value):
+    if isinstance(value, str):
+        return bool(re.search(r'[\ud800-\udfff]', value))
+    if isinstance(value, dict):
+        return any(_contains_surrogate(key) or _contains_surrogate(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_contains_surrogate(item) for item in value)
+    return False
+
+
 def _hash(value):
-    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+    return hashlib.sha256(json_text(value, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
 def _read_json(path):
@@ -223,6 +244,9 @@ def _records(sources, start, end, *, progress=None, cancel=None):
                 for node, _trail, _path in message_nodes(row):
                     found, detail, _actions = content_issues(node)
                     codes.extend(found); reasons.extend(detail)
+                if _contains_surrogate(row):
+                    codes.append('message_unicode_partial')
+                    reasons.append('部分字符异常，已用转义标记保留，请核对原记录。')
                 entry = {'evidenceId': 'm-' + key, 'messageId': str(identifier), 'serverId': row.get('serverId'),
                          'chatId': source['chat']['id'], 'chatName': source['chat'].get('name') or source['chat']['id'],
                          'conversationMode': source['chat']['conversationKind'], 'selfId': source['selfId'],
@@ -345,7 +369,7 @@ def _followups(records, my_names, *, progress=None, cancel=None):
             results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'],
                             'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'],
                             'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认',
-                            'text': request['text'], 'target': target, 'targetBasis': basis,
+                            'text': request['text'], 'contentIssues': request['issues'], 'target': target, 'targetBasis': basis,
                             'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score,
                             'replyEvidenceId': reply['evidenceId'] if reply else None,
                             'replyBasis': reply_basis,
@@ -444,14 +468,14 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.daily-report-', dir=destination.parent))
     try:
-        (stage / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        (stage / 'report.json').write_text(json_text(report, indent=2) + '\n', encoding='utf-8')
         with (stage / 'evidence.jsonl').open('w', encoding='utf-8') as stream:
             for row in records:
                 _checkpoint(cancel)
-                stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+                stream.write(json_text(row) + '\n')
         with (stage / 'diagnostics.jsonl').open('w', encoding='utf-8') as stream:
             def audit(event, **fields):
-                stream.write(json.dumps({'event': event, **fields}, ensure_ascii=False) + '\n')
+                stream.write(json_text({'event': event, **fields}) + '\n')
             audit('daily_report_created', version=version, client=client, date=day,
                   createdAt=report['createdAt'], accountKey=report['accountKey'], lookback=report['lookback'])
             for source in report['sources']:
@@ -466,8 +490,8 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                      for path in sorted(stage.iterdir())]
-        (stage / 'manifest.json').write_text(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client,
-            'date': day, 'version': version, 'files': checksums}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        (stage / 'manifest.json').write_text(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client,
+            'date': day, 'version': version, 'files': checksums}, indent=2) + '\n', encoding='utf-8')
         _checkpoint(cancel)
         publish_directory(stage, destination)
     finally:

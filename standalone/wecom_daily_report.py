@@ -7,14 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=98c473d6446118ddaa8a2110e167910226bbc9df039fb58163d9988448dc73f1
+# scripts/chat_release.py sha256-utf8-lf=2f7f6524f21596f3e5e759c5a43c071353166226409cb491c7c7abfddd52d943
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
-# web_mvp/offline_daily.py sha256-utf8-lf=992986aa037b1c7db66478700d1f7245b052d79d3aa1a5e50335a156cb55aea9
-# web_mvp/offline_daily_html.py sha256-utf8-lf=b80a7dcf821558aaf2a7df1cbc9ef6993bff478ecf09eb1e3263a33e71967021
+# web_mvp/offline_daily.py sha256-utf8-lf=aa5f008a77d5e56c465af7dfa6217a26d4ef84307e7e9ba0d62aacabfe854fa3
+# web_mvp/offline_daily_html.py sha256-utf8-lf=016dbbc9788dd527b9c24fc971625df9c3b2aa77d0831cb489ab25be39f46fcf
 # web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
 # web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
-# web_mvp/offline_daily_ui.py sha256-utf8-lf=0424359b02ed9252e321f01635c442fbd0afc9aa2635db395e21f508b5281512
-# scripts/daily_report.py sha256-utf8-lf=07323b67b0e1f94f2b1cbb81a231df59207cc26c08a930d2a2c8cb8a48075815
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=13e0b798fe60b1b105cea021e18a2488cee78830931b2fa2b6f87e39018d6d4b
+# scripts/daily_report.py sha256-utf8-lf=5d079faffbabeeed0b06589ec1a7ce8fc9c24a3f0ce3002f19bb655ccbdcd140
 
 import os
 import time
@@ -85,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.3.0'
+DAILY_REPORT_VERSION = '1.3.1'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -200,8 +200,24 @@ URGENCY = re.compile('紧急|尽快|催|截止|最后期限|逾期|投诉|索赔
 TOPICS = {'报价与价格': ('报价', '价格', '费用', 'quotation'), '订单与交付': ('订单', '交付', '发货', '运单', '提货'), '合同与方案': ('合同', '方案', '协议'), '付款与对账': ('付款', '支付', '发票', '对账', 'invoice'), '需求与上线': ('需求', '上线', '发布', '功能'), '问题与售后': ('故障', '异常', '售后', '投诉', '索赔'), '会议与安排': ('会议', '开会', '安排', '预约')}
 STATE_LABELS = {'needs_response': '尚未找到对应回复', 'deferred': '本人暂缓处理，仍待跟进', 'responded': '已有后续回复，处理结果待核对', 'completion_signal': '本人表示已处理，待核对', 'withdrawal_signal': '对方表示取消或暂缓，待核对', 'target_uncertain': '群内请求，对象待确认', 'identity_unknown': '本人身份未知，归属待确认'}
 
+def display_text(value):
+    """Keep lone UTF-16 units visible without losing the surrounding text."""
+    return str(value).encode('utf-8', 'backslashreplace').decode('utf-8')
+
+def json_text(value, **options):
+    return display_text(json.dumps(value, ensure_ascii=False, **options))
+
+def _contains_surrogate(value):
+    if isinstance(value, str):
+        return bool(re.search('[\\ud800-\\udfff]', value))
+    if isinstance(value, dict):
+        return any((_contains_surrogate(key) or _contains_surrogate(item) for key, item in value.items()))
+    if isinstance(value, list):
+        return any((_contains_surrogate(item) for item in value))
+    return False
+
 def _hash(value):
-    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+    return hashlib.sha256(json_text(value, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 def _read_json(path):
     try:
@@ -353,6 +369,9 @@ def _records(sources, start, end, *, progress=None, cancel=None):
                     found, detail, _actions = content_issues(node)
                     codes.extend(found)
                     reasons.extend(detail)
+                if _contains_surrogate(row):
+                    codes.append('message_unicode_partial')
+                    reasons.append('部分字符异常，已用转义标记保留，请核对原记录。')
                 entry = {'evidenceId': 'm-' + key, 'messageId': str(identifier), 'serverId': row.get('serverId'), 'chatId': source['chat']['id'], 'chatName': source['chat'].get('name') or source['chat']['id'], 'conversationMode': source['chat']['conversationKind'], 'selfId': source['selfId'], 'senderId': sender, 'senderName': row.get('senderName') or '身份未知', 'direction': direction, 'time': moment.isoformat() if moment else None, 'originalTime': row.get('time'), 'kind': row.get('kind') or 'unknown', 'text': row.get('text') if isinstance(row.get('text'), str) else '', 'mentions': row.get('mentions') or {}, 'provenance': row.get('provenance') or {}, 'content': {key: row[key] for key in ('quote', 'record', 'attachmentContent', 'location', 'contact', 'miniProgram', 'asset') if key in row}, 'issues': sorted(set(codes)), 'issueReasons': list(dict.fromkeys(reasons)), 'sources': [reference], '_signature': signature}
                 records[key] = entry
                 if moment is None:
@@ -457,7 +476,7 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                     reply, state = (later, 'withdrawal_signal')
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
-            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': reply_basis, 'humanReviewRequired': True})
+            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'contentIssues': request['issues'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': reply_basis, 'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
 def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=(), progress=None, cancel=None):
@@ -528,15 +547,15 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.daily-report-', dir=destination.parent))
     try:
-        (stage / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        (stage / 'report.json').write_text(json_text(report, indent=2) + '\n', encoding='utf-8')
         with (stage / 'evidence.jsonl').open('w', encoding='utf-8') as stream:
             for row in records:
                 _checkpoint(cancel)
-                stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+                stream.write(json_text(row) + '\n')
         with (stage / 'diagnostics.jsonl').open('w', encoding='utf-8') as stream:
 
             def audit(event, **fields):
-                stream.write(json.dumps({'event': event, **fields}, ensure_ascii=False) + '\n')
+                stream.write(json_text({'event': event, **fields}) + '\n')
             audit('daily_report_created', version=version, client=client, date=day, createdAt=report['createdAt'], accountKey=report['accountKey'], lookback=report['lookback'])
             for source in report['sources']:
                 audit('source_validated', **source)
@@ -547,7 +566,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
             audit('scope_limitations', limitations=report['limitations'])
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(stage.iterdir())]
-        (stage / 'manifest.json').write_text(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'date': day, 'version': version, 'files': checksums}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        (stage / 'manifest.json').write_text(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'date': day, 'version': version, 'files': checksums}, indent=2) + '\n', encoding='utf-8')
         _checkpoint(cancel)
         publish_directory(stage, destination)
     finally:
@@ -558,12 +577,14 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
 import html
 
 def _business_name(value, identifier, fallback):
-    return str(value) if value and str(value) != str(identifier) else fallback
+    return display_text(value) if value and str(value) != str(identifier) else fallback
 
 def _business_gaps(row):
     notes = []
     for code in row['issues']:
-        if code.startswith('document_'):
+        if code == 'message_unicode_partial':
+            note = '部分字符异常，已用转义标记保留，请核对原记录。'
+        elif code.startswith('document_'):
             note = '附件正文尚未完整读取，请核对原件。'
         elif code in {'original_unavailable', 'media_not_checked'}:
             note = '原图或附件尚未补齐，需要时请查看原记录。'
@@ -578,7 +599,7 @@ def _business_gaps(row):
     return ' '.join(notes) or '当前未记录需要补充的信息。'
 
 def _business_content(content):
-    esc = lambda value: html.escape(str(value), quote=True)
+    esc = lambda value: html.escape(display_text(value), quote=True)
     parts = []
 
     def add(node, heading):
@@ -599,11 +620,11 @@ def _business_content(content):
     return '<details><summary>查看引用、转发或附件原文</summary>' + ''.join(parts) + '</details>' if parts else ''
 
 def render_report(report, records):
-    esc = lambda value: html.escape(str(value), quote=True)
+    esc = lambda value: html.escape(display_text(value), quote=True)
     label = '个人微信' if report['client'] == 'wechat' else '企业微信'
     overview = report['overview']
     by_id = {row['evidenceId']: row for row in records}
-    used = set()
+    used = {row['evidenceId'] for row in records if 'message_unicode_partial' in row['issues']}
 
     def evidence_link(identifier, title='查看依据'):
         if not identifier or identifier not in by_id:
@@ -632,6 +653,8 @@ def render_report(report, records):
         evidence.append('<details class="evidence" id="' + identifier + '"><summary>' + esc(row['time'][:16].replace('T', ' ') if row['time'] else '时间待确认') + ' · ' + esc(_business_name(row['chatName'], row['chatId'], '会话名称待补充')) + ' · ' + esc(_business_name(row['senderName'], row['senderId'], '发送人待确认')) + '</summary><p class="quote">' + esc(row['text']) + '</p><p class="muted">' + esc(_business_gaps(row)) + '</p>' + _business_content(row['content']) + '</details>')
     source_rows = ''.join(('<tr><td>' + esc(_business_name(source['chat'].get('name'), source['chat']['id'], '会话名称待补充')) + '</td><td>' + ('群聊' if source['chat']['conversationKind'] == 'group' else '私聊') + '</td><td>' + str(source['exportedRows']) + '</td><td>' + esc((source['startDate'] or '未限定') + ' 至 ' + (source['endDate'] or '未限定')) + '</td></tr>' for source in report['sources']))
     business_limits = ['仅覆盖本次提供的会话和导出日期，未提供或本地未保存的消息不在统计内。', '待跟进是候选线索，已有回复、表示完成或取消均需结合原文核对。']
+    if any(('message_unicode_partial' in row['issues'] for row in records)):
+        business_limits.append('部分字符异常，已用转义标记保留，可在原文依据中核对；相关内容仍需人工确认。')
     if overview['undatedMessages']:
         business_limits.append('部分消息时间待确认，未计入当天概览和待跟进。')
     if any((source['limitations'] for source in report['sources'])) or len(report['limitations']) > 4:
@@ -1406,18 +1429,18 @@ around a flat surface and status chips are painted on a canvas.
                 if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
                     continue
                 name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-                if query and query not in ' '.join((name, row['senderName'], row['text'], row['stateLabel'])).casefold():
+                if query and query not in display_text(' '.join((name, row['senderName'], row['text'], row['stateLabel']))).casefold():
                     continue
                 rows.append((index, row, name))
             for index, row, name in rows[:500]:
-                self.followup_tree.insert('', 'end', iid=str(index), values=(name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140]))
+                self.followup_tree.insert('', 'end', iid=str(index), values=tuple((display_text(value) for value in (name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140]))))
             self.result_count.set(f'匹配 {len(rows):,} 条 · ' + ('展示前 500 条，其余请在 HTML 日报中查看' if len(rows) > 500 else '选中线索查看完整请求'))
             self._set_detail('当前筛选下没有线索。' if not rows else '选择一条线索查看完整请求；处理进展需结合 HTML 日报的原文依据核对。')
 
         def _set_detail(self, text):
             self.detail.configure(state='normal')
             self.detail.delete('1.0', 'end')
-            self.detail.insert('1.0', text)
+            self.detail.insert('1.0', display_text(text))
             self.detail.configure(state='disabled')
 
         def show_detail(self, _event=None):
@@ -1426,7 +1449,8 @@ around a flat surface and status chips are painted on a canvas.
             if selected:
                 row = self.followups[int(selected[0])]
                 name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-                self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}")
+                note = '\n\n' + _business_gaps({'issues': row['contentIssues']}) if row.get('contentIssues') else ''
+                self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}" + note)
 
         @staticmethod
         def _open_path(path):
@@ -1516,7 +1540,6 @@ around a flat surface and status chips are painted on a canvas.
     return _run_daily_desktop(client, options, version)
 import argparse
 from datetime import datetime, timedelta, timezone
-import json
 from pathlib import Path
 import sys
 
@@ -1558,7 +1581,7 @@ def main(client, argv=None, *, standalone=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
+        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or (not arguments):
         return run_daily_desktop(client, args, DAILY_REPORT_VERSION)
@@ -1566,7 +1589,7 @@ def main(client, argv=None, *, standalone=False):
         if args.interactive:
             _interactive_values(args, label)
     except (DailyReportError, EOFError, KeyboardInterrupt) as error:
-        print(json.dumps({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}, ensure_ascii=False))
+        print(json_text({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}))
         return 2
     if not args.export_root or not args.date or (not args.output):
         parser.error('需要 --export-root、--date 和 --output。')
@@ -1574,9 +1597,9 @@ def main(client, argv=None, *, standalone=False):
         result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output, version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
     except (ArchiveError, OSError) as error:
         result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, ArchiveError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
-        print(json.dumps(result, ensure_ascii=False))
+        print(json_text(result))
         return 2
-    print(json.dumps(result, ensure_ascii=False))
+    print(json_text(result))
     return 0
 
 if __name__ == "__main__":

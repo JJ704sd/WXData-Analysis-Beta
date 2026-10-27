@@ -1,15 +1,19 @@
 """Self-contained, escaped HTML for daily reports; no external assets."""
 import html
 
+from offline_daily import display_text
+
 
 def _business_name(value, identifier, fallback):
-    return str(value) if value and str(value) != str(identifier) else fallback
+    return display_text(value) if value and str(value) != str(identifier) else fallback
 
 
 def _business_gaps(row):
     notes = []
     for code in row['issues']:
-        if code.startswith('document_'):
+        if code == 'message_unicode_partial':
+            note = '部分字符异常，已用转义标记保留，请核对原记录。'
+        elif code.startswith('document_'):
             note = '附件正文尚未完整读取，请核对原件。'
         elif code in {'original_unavailable', 'media_not_checked'}:
             note = '原图或附件尚未补齐，需要时请查看原记录。'
@@ -25,7 +29,7 @@ def _business_gaps(row):
 
 
 def _business_content(content):
-    esc = lambda value: html.escape(str(value), quote=True)
+    esc = lambda value: html.escape(display_text(value), quote=True)
     parts = []
 
     def add(node, heading):
@@ -48,11 +52,11 @@ def _business_content(content):
 
 
 def render_report(report, records):
-    esc = lambda value: html.escape(str(value), quote=True)
+    esc = lambda value: html.escape(display_text(value), quote=True)
     label = '个人微信' if report['client'] == 'wechat' else '企业微信'
     overview = report['overview']
     by_id = {row['evidenceId']: row for row in records}
-    used = set()
+    used = {row['evidenceId'] for row in records if 'message_unicode_partial' in row['issues']}
 
     def evidence_link(identifier, title='查看依据'):
         if not identifier or identifier not in by_id:
@@ -102,6 +106,8 @@ def render_report(report, records):
                           + '</td></tr>' for source in report['sources'])
     business_limits = ['仅覆盖本次提供的会话和导出日期，未提供或本地未保存的消息不在统计内。',
                        '待跟进是候选线索，已有回复、表示完成或取消均需结合原文核对。']
+    if any('message_unicode_partial' in row['issues'] for row in records):
+        business_limits.append('部分字符异常，已用转义标记保留，可在原文依据中核对；相关内容仍需人工确认。')
     if overview['undatedMessages']:
         business_limits.append('部分消息时间待确认，未计入当天概览和待跟进。')
     if any(source['limitations'] for source in report['sources']) or len(report['limitations']) > 4:

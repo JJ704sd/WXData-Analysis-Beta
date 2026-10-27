@@ -1,7 +1,6 @@
 """Shared CLI for client-bound daily reports; never reads a live client."""
 import argparse
 from datetime import datetime, timedelta, timezone
-import json
 from pathlib import Path
 import sys
 
@@ -10,7 +9,7 @@ if not getattr(sys, 'frozen', False):
     sys.path.insert(0, str(PROJECT / 'web_mvp'))
 
 from chat_release import DAILY_REPORT_VERSION
-from offline_daily import ArchiveError, DailyReportError, build_daily_report
+from offline_daily import ArchiveError, DailyReportError, build_daily_report, json_text
 
 
 def _interactive_values(args, label):
@@ -52,12 +51,12 @@ def main(client, argv=None, *, standalone=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json.dumps({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION,
+        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION,
                           'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports',
                           'readsLiveClient': False, 'callsModelAPI': False,
                           'standalone': standalone, 'requiresRepository': not standalone,
                           'desktopUI': True,
-                          'requiresPythonInstallation': not getattr(sys, 'frozen', False)}, ensure_ascii=False))
+                          'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or not arguments:
         from offline_daily_ui import run_daily_desktop
@@ -66,7 +65,7 @@ def main(client, argv=None, *, standalone=False):
         if args.interactive:
             _interactive_values(args, label)
     except (DailyReportError, EOFError, KeyboardInterrupt) as error:
-        print(json.dumps({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}, ensure_ascii=False))
+        print(json_text({'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '输入已取消，未生成日报。'}))
         return 2
     if not args.export_root or not args.date or not args.output:
         parser.error('需要 --export-root、--date 和 --output。')
@@ -75,7 +74,7 @@ def main(client, argv=None, *, standalone=False):
                                     version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
     except (ArchiveError, OSError) as error:
         result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, ArchiveError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
-        print(json.dumps(result, ensure_ascii=False))
+        print(json_text(result))
         return 2
-    print(json.dumps(result, ensure_ascii=False))
+    print(json_text(result))
     return 0

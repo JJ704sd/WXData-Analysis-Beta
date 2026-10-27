@@ -1,10 +1,10 @@
 # 个微与企微本地消息日报
 
-`wechat_daily_report.py` 和 `wecom_daily_report.py` 将四类助手的正式导出整理成每日概览、待跟进线索及本地 HTML 日报。两个入口固定各自客户端，共用整理内核，当前版本 1.3.0。
+`wechat_daily_report.py` 和 `wecom_daily_report.py` 将四类助手的正式导出整理成每日概览、待跟进线索及本地 HTML 日报。两个入口固定各自客户端，共用整理内核，当前版本 1.3.1。
 
 ## 输入和启动
 
-直接使用 [发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.3.0) 的 Windows x64 便携包或 Skill，不需要安装 Python、pip 或完整仓库。解压后双击 `Start.cmd` 或 `wechat-daily-report-ui.exe`／`wecom-daily-report-ui.exe` 打开桌面；带参数执行 `*-daily-report.exe` 供命令行与 Skill 使用。单文件源码位于仓库 `standalone/`，需要 Python 3.12+，桌面模式还需该 Python 自带 Tcl/Tk，无需 pip；已验证 Python 3.14.6。开发入口仍保留在 `WeBridge/scripts/`。
+直接使用 [发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.3.1) 的 Windows x64 便携包或 Skill，不需要安装 Python、pip 或完整仓库。解压后双击 `Start.cmd` 或 `wechat-daily-report-ui.exe`／`wecom-daily-report-ui.exe` 打开桌面；带参数执行 `*-daily-report.exe` 供命令行与 Skill 使用。单文件源码位于仓库 `standalone/`，需要 Python 3.12+，桌面模式还需该 Python 自带 Tcl/Tk，无需 pip；已验证 Python 3.14.6。开发入口仍保留在 `WeBridge/scripts/`。
 
 桌面沿用原助手的主题、卡片、日期选择器和滚动条，分为“准备日报”和“概览与待跟进”两页：
 
@@ -64,6 +64,8 @@
 
 请求、主题和风险识别只读取根文本及引用消息自身正文；被引用原文、转发记录和附件作者的内容保持原归属。原文、嵌套结构、解析缺口和来源在证据中保留，HTML 卡片的短预览不会截断证据文件。
 
+正文、引用、转发或附件含异常字符时，HTML 与桌面以 `\ud800` 等可见标记保留，并提示核对原记录；后续正常消息继续处理。JSON 证据使用合法转义保留原字符，去重仍区分原始异常字符与字面转义文本，不把不同原文当成同一条。
+
 ## 校验与输出
 
 读取前检查原助手的确认状态、显式复核清单、客户端、会话、账号来源以及文件字节数和 SHA-256。读取消息时再次核对条数和摘要，并检查元数据未在读取期间变化。重叠导出按账号、会话与稳定消息 ID 去重，并保留所有来源行号；同一 ID 内容冲突直接报错，不选择其中一个版本。
@@ -78,9 +80,9 @@
 | `diagnostics.jsonl` | 消息与来源 ID、复核编号、来源目录、摘要、内部状态、请求与回应关联依据 |
 | `manifest.json` | 日报客户端、日期、版本及另外四个文件的字节数、SHA-256 |
 
-输出 JSON 的 `schemaVersion` 为 1，诊断日志为兼容性新增文件。报告与线索区域展示会话、发送人、时间、正文和业务影响，不展示消息 ID、来源指纹、复核编号、目录路径或原始 JSON 结构；HTML 排查入口默认折叠。名称缺失时显示“待确认”，不用 ID 代替业务名称。桌面材料选择与保存位置仍展示必要文件路径。引用、转发及附件中已有的正文按原归属展示，完整结构与追踪信息留在数据文件及日志。
+输出 JSON 的 `schemaVersion` 为 1；线索兼容新增 `contentIssues` 字段，供界面提示内容缺口，旧字段继续保留。诊断使用 `message_unicode_partial` 记录异常字符。报告与线索区域展示会话、发送人、时间、正文和业务影响，不展示消息 ID、来源指纹、复核编号、目录路径或原始 JSON 结构；HTML 排查入口默认折叠。名称缺失时显示“待确认”，不用 ID 代替业务名称。桌面材料选择与保存位置仍展示必要文件路径。引用、转发及附件中已有的正文按原归属展示，完整结构与追踪信息留在数据文件及日志。
 
-HTML 仅展示所引用的证据，完整回看证据在 JSONL。HTML 无外部资源，搜索、筛选和展开依据均在浏览器本地执行；消息内容进行 HTML 转义。输出以临时目录生成后整体发布，沿用已有 Windows 文件占用有限重试逻辑。数据文件和日志包含原文、技术标识及来源路径，分享时应选择实际需要的文件。
+HTML 展示线索引用的证据及含异常字符的原文，完整回看证据在 JSONL。HTML 无外部资源，搜索、筛选和展开依据均在浏览器本地执行；消息内容进行 HTML 转义。输出以临时目录生成后整体发布，沿用已有 Windows 文件占用有限重试逻辑。数据文件和日志包含原文、技术标识及来源路径，分享时应选择实际需要的文件。
 
 ## Skill 导入
 
@@ -104,14 +106,14 @@ EXE 由 PyInstaller 6.22.3 构建，桌面与命令行二进制均内含 Python�
 & .\WeBridge\scripts\build_daily_reports.ps1 -Python "$PWD\.venv\Scripts\python.exe"
 ```
 
-输出为 `WeBridge/build/daily-1.3.0/` 下的 `standalone/`、`bin/`、`packages/`。每个客户端各构建桌面 UI 与命令行 EXE，`Start.cmd` 调用桌面，Skill 自动生成调用命令行。构建目录必须为新目录；也可使用 `-OutputDirectory` 指定 `WeBridge/build/` 下的新位置。四个 ZIP 分别是两个便携包和两个 Skill，均包含 Python、PyInstaller、Tcl、Tk 许可文本、文件清单及摘要；`release-matrix.json` 记录包摘要、实际能力查询和桌面组件初始化结果。
+输出为 `WeBridge/build/daily-1.3.1/` 下的 `standalone/`、`bin/`、`packages/`。每个客户端各构建桌面 UI 与命令行 EXE，`Start.cmd` 调用桌面，Skill 自动生成调用命令行。构建目录必须为新目录；也可使用 `-OutputDirectory` 指定 `WeBridge/build/` 下的新位置。四个 ZIP 分别是两个便携包和两个 Skill，均包含 Python、PyInstaller、Tcl、Tk 许可文本、文件清单及摘要；`release-matrix.json` 记录包摘要、实际能力查询和桌面组件初始化结果。
 
 从仓库根目录执行定向检查：
 
 ```powershell
 .\.venv\Scripts\python.exe WeBridge\scripts\check_assistants.py `
   --report .runtime\daily-checks.json `
-  test_daily_reports test_daily_refinements test_daily_ui test_daily_distribution.StandaloneDistributionTests `
+  test_daily_reports test_daily_refinements test_daily_history test_daily_ui test_daily_distribution.StandaloneDistributionTests `
   test_runtime_identity test_windows_hook_smoke.SourceBindingTests
 .\.venv\Scripts\python.exe WeBridge\scripts\check_runtime_identity.py
 ```
@@ -119,13 +121,13 @@ EXE 由 PyInstaller 6.22.3 构建，桌面与命令行二进制均内含 Python�
 已构建 ZIP 的隔离验证另运行：
 
 ```powershell
-$env:DAILY_DELIVERY_ROOT = "$PWD\WeBridge\build\daily-1.3.0\packages"
+$env:DAILY_DELIVERY_ROOT = "$PWD\WeBridge\build\daily-1.3.1\packages"
 .\.venv\Scripts\python.exe WeBridge\scripts\check_assistants.py `
   --report .runtime\daily-native-checks.json test_daily_distribution.WindowsDeliveryTests
 ```
 
-1.3.0 当前检查见 [分发验证记录](daily-delivery-validation.json)，1.0.0 源码基线记录保留在 [原验证文件](daily-reports-validation.json)。检查覆盖四类助手实际导出流程生成的合成材料、客户端绑定、隔离单文件运行、跨日与多请求、归属边界、业务界面与诊断日志、Tk 后台生成及取消、失败保留输入、重复提交防护、搜索筛选、日期选择、小窗口与较大字体布局、原生 EXE、中文及带空格路径、无 Python PATH、四个 ZIP 的 CRC/摘要及许可文本。新增回归覆盖数字引用、同秒回复、嵌入编号与本地来源不同、异常点名、整理期间取消、日期溢出和 Windows 发布失败回执；单文件和实际 EXE 也运行引用回归材料。
+1.3.1 当前检查见 [分发验证记录](daily-delivery-validation.json)，1.0.0 源码基线记录保留在 [原验证文件](daily-reports-validation.json)。检查覆盖四类助手实际导出流程生成的合成材料、客户端绑定、隔离单文件运行、跨日与多请求、归属边界、业务界面与诊断日志、Tk 后台生成及取消、失败保留输入、重复提交防护、搜索筛选、日期选择、小窗口与较大字体布局、原生 EXE、中文及带空格路径、无 Python PATH、四个 ZIP 的 CRC/摘要及许可文本。回归包括数字引用、同秒回复、嵌入编号与本地来源不同、异常点名、整理期间取消、日期溢出和 Windows 发布失败回执。1.3.1 新增异常正文与附件字符、正常后续消息、原文冲突保护、桌面搜索和 JSON 回执检查；对应材料也由单文件和实际 EXE 执行。历史故障依据及定向检查见 [对应处理记录](daily-history-fixes.md)。
 
-线索整理改为按引用建立索引，保留同一组材料中的多请求与回复边界，并在整理过程中检查取消。合成基准使用 1,200 条请求与各自对应的 1,200 条引用回复，分别运行三次；仅匹配内核的中位耗时从约 0.819 秒降至 0.005 秒，输出摘要一致。该结果不包含文件校验、消息读取和 HTML 写入，也不代表真实账号的整体耗时。
+1.3.0 将线索整理改为按引用建立索引，保留多请求与回复边界，并在整理过程中检查取消。该版本的合成基准使用 1,200 条请求与各自对应的 1,200 条引用回复，分别运行三次；仅匹配内核的中位耗时从约 0.819 秒降至 0.005 秒，输出摘要一致。该结果不包含文件校验、消息读取和 HTML 写入，也不代表真实账号的整体耗时。
 
 这些结果覆盖合成数据、本机 Tk 交互和原生 EXE 组件初始化，不包含桌面截图或人工视觉验收；尚未验证真实账号材料、原故障电脑、Windows 11 或 WorkBuddy 客户端内导入。日报独立构建，不改变原四类采集 Skill 的发布矩阵。

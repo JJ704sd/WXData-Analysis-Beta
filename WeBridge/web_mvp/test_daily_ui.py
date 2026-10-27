@@ -13,6 +13,7 @@ from chat_release import DAILY_REPORT_VERSION
 from offline_daily import DailyReportCancelled, DailyReportError, build_daily_report
 from offline_daily_ui import DailyReportApp
 from test_daily_distribution import source_pair
+from test_daily_history import unicode_export
 from test_daily_reports import DAY, formal_export, message
 
 
@@ -170,6 +171,23 @@ class DailyDesktopTests(unittest.TestCase):
         app.generate()
         self.assertIn('90', app.status.get())
         self.assertFalse((self.base / 'reports').exists())
+
+    def test_partial_characters_stay_visible_and_searchable_in_business_preview(self):
+        app = self.create_app()
+        source = unicode_export(self.base, 'partial-characters')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'unicode-report')
+        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+        app.present_result(result, report)
+        app.search.set('ud800')
+        children = app.followup_tree.get_children()
+        self.assertEqual(len(children), 1)
+        self.assertIn('\\ud800', str(app.followup_tree.item(children[0])['values']))
+        app.followup_tree.selection_set(children[0])
+        app.show_detail()
+        detail = app.detail.get('1.0', 'end')
+        self.assertIn('\\ud800', detail)
+        self.assertIn('37/KG 💬', detail)
+        self.assertIn('字符', detail)
 
     def test_unresolved_sender_name_keeps_identifier_out_of_business_preview(self):
         app = self.create_app()
