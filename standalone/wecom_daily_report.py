@@ -7,14 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=761686e005b7b29a89bb5afad6f50b1e04caf1bde63e9d2495b5f9c44b140749
+# scripts/chat_release.py sha256-utf8-lf=98c473d6446118ddaa8a2110e167910226bbc9df039fb58163d9988448dc73f1
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
-# web_mvp/offline_daily.py sha256-utf8-lf=0dc872de9bfa138b726bcc2866c2d874f25e85499171035b3377a59f677d6f54
+# web_mvp/offline_daily.py sha256-utf8-lf=992986aa037b1c7db66478700d1f7245b052d79d3aa1a5e50335a156cb55aea9
 # web_mvp/offline_daily_html.py sha256-utf8-lf=b80a7dcf821558aaf2a7df1cbc9ef6993bff478ecf09eb1e3263a33e71967021
 # web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
 # web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
-# web_mvp/offline_daily_ui.py sha256-utf8-lf=c3c5e0331a7e6b133b89522121bec558ff5b74c837173ca5115c7a50a36a5a0f
-# scripts/daily_report.py sha256-utf8-lf=3aaded599199f6e516d0a7369c2e710240247d1d22e6bdc269496fcc98be1c50
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=0424359b02ed9252e321f01635c442fbd0afc9aa2635db395e21f508b5281512
+# scripts/daily_report.py sha256-utf8-lf=07323b67b0e1f94f2b1cbb81a231df59207cc26c08a930d2a2c8cb8a48075815
 
 import os
 import time
@@ -85,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.2.0'
+DAILY_REPORT_VERSION = '1.3.0'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -377,6 +377,8 @@ def _target(row, my_names):
         return ('self', 'direct_conversation')
     mentions = row['mentions'] if isinstance(row['mentions'], dict) else {}
     ids = mentions.get('ids') or []
+    if not isinstance(ids, list) or any((not isinstance(value, str) for value in ids)):
+        return ('unknown', 'group_target_unknown')
     if row['selfId'] in ids:
         return ('self', 'structured_mention')
     if ids:
@@ -385,44 +387,77 @@ def _target(row, my_names):
         return ('self', 'explicit_name_clue')
     return ('unknown', 'group_target_unknown')
 
-def _quote_targets(row, request):
+def _quote_ids(row):
     quote = row['content'].get('quote') or {}
-    linked = quote.get('sourceMessageId') or quote.get('messageId')
+    if not isinstance(quote, dict):
+        return set()
     message = quote.get('message') or {}
-    return linked == request['messageId'] or message.get('id') == request['messageId']
+    nested = message.get('id') if isinstance(message, dict) else None
 
-def _followups(records, my_names):
+    def identifier(value):
+        return str(value) if isinstance(value, (str, int)) and (not isinstance(value, bool)) and (value != '') else None
+    source = identifier(quote.get('sourceMessageId'))
+    if source is not None:
+        return {source}
+    return {value for value in (identifier(quote.get('messageId')), identifier(nested)) if value is not None}
+
+def _followups(records, my_names, *, progress=None, cancel=None):
     groups = defaultdict(list)
-    for row in records:
+    for index, row in enumerate(records):
+        if index % 256 == 0:
+            _checkpoint(cancel)
         if row['time']:
             groups[row['chatId']].append(row)
-    results = []
+    results, processed = ([], 0)
+    total = sum(map(len, groups.values()))
     for rows in groups.values():
-        requests = [row for row in rows if row['direction'] != 'outgoing' and REQUEST.search(_primary(row)) and (not WITHDRAWAL.search(_primary(row)))]
+        requests, responses = ([], [])
+        for row in rows:
+            if processed % 256 == 0:
+                _checkpoint(cancel)
+            body = _primary(row)
+            withdrawn = bool(WITHDRAWAL.search(body))
+            if row['direction'] != 'outgoing' and REQUEST.search(body) and (not withdrawn):
+                requests.append(row)
+            if body and (row['direction'] == 'outgoing' or withdrawn):
+                responses.append((row, body))
+            processed += 1
+            if processed % 500 == 0 or processed == total:
+                _progress(progress, 'organizing', processedMessages=processed, totalMessages=total)
+                _checkpoint(cancel)
         request_times = [row['time'] for row in requests]
-        responses = [row for row in rows if _primary(row) and (row['direction'] == 'outgoing' or WITHDRAWAL.search(_primary(row)))]
+        candidates = defaultdict(list)
+        for index, (later, body) in enumerate(responses):
+            if index % 128 == 0:
+                _checkpoint(cancel)
+            identifiers = _quote_ids(later)
+            if len(identifiers) == 1:
+                candidates[next(iter(identifiers))].append((later, body, True))
+            elif requests and later['conversationMode'] == 'direct' and (not later['content'].get('quote')) and (later['time'] > requests[0]['time']) and (bisect_right(request_times, later['time']) == 1):
+                candidates[requests[0]['messageId']].append((later, body, False))
         for request in requests:
+            _checkpoint(cancel)
             target, basis = _target(request, my_names)
             if target == 'other':
                 continue
             state = 'needs_response' if target == 'self' else 'identity_unknown' if basis == 'identity_unknown' else 'target_uncertain'
-            reply = None
-            for later in responses:
-                if later['time'] <= request['time'] or not _primary(later):
+            reply, reply_basis = (None, None)
+            for index, (later, body, explicit) in enumerate(candidates[request['messageId']]):
+                if index % 128 == 0:
+                    _checkpoint(cancel)
+                if later['time'] < request['time'] or (later['time'] == request['time'] and (not explicit)):
                     continue
-                explicit = _quote_targets(later, request)
-                competing = bisect_right(request_times, later['time'])
-                chronological = request['conversationMode'] == 'direct' and competing == 1 and (not later['content'].get('quote'))
-                if target != 'self' or not (explicit or chronological):
+                if target != 'self':
                     continue
                 if later['direction'] == 'outgoing':
                     reply = later
-                    body = _primary(later)
+                    reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
                     state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and (not NEGATION.search(body)) else 'responded'
-                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(_primary(later)):
+                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(body):
                     reply, state = (later, 'withdrawal_signal')
+                    reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
-            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': ('explicit_quote' if _quote_targets(reply, request) else 'direct_chronology') if reply else None, 'humanReviewRequired': True})
+            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': reply_basis, 'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
 def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=(), progress=None, cancel=None):
@@ -437,9 +472,12 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
         raise DailyReportError('日期须为 YYYY-MM-DD。') from error
     if not isinstance(lookback_days, int) or not 1 <= lookback_days <= 90:
         raise DailyReportError('回看范围须为 1 至 90 天（含日报当天）。')
-    start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
-    day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
-    end = day_start + timedelta(days=1)
+    try:
+        start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
+        day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
+        end = day_start + timedelta(days=1)
+    except OverflowError as error:
+        raise DailyReportError('日报日期与回看天数超出可处理的日期范围，请调整后重试。') from error
     _checkpoint(cancel)
     _progress(progress, 'checking')
     roots, limitations = _roots(export_roots)
@@ -466,7 +504,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     _checkpoint(cancel)
     _progress(progress, 'organizing', messages=len(records))
     today = [row for row in records if row['time'] and day_start <= _moment(row['time']) < end]
-    followups = _followups(records, tuple((name.strip() for name in my_names if name.strip())))
+    followups = _followups(records, tuple((name.strip() for name in my_names if name.strip())), progress=progress, cancel=cancel)
     hours = Counter((_moment(row['time']).hour for row in today))
     directions = Counter((row['direction'] for row in today))
     conversations = []
@@ -1141,7 +1179,11 @@ around a flat surface and status chips are painted on a canvas.
             horizontal.grid(row=1, column=0, sticky='ew')
             self.followup_tree.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
             self.followup_tree.bind('<<TreeviewSelect>>', self.show_detail)
-            ttk.Label(self.results, textvariable=self.result_count, style='Hint.TLabel').grid(row=4, column=0, sticky='ew', padx=14, pady=5)
+            selection_bar = tk.Frame(self.results, background=SURFACE)
+            selection_bar.grid(row=4, column=0, sticky='ew', padx=14, pady=5)
+            ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
+            self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
+            self.open_selected_button.pack(side='right', padx=(8, 0))
             detail_frame = tk.Frame(self.results, background=SURFACE)
             detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
             self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1, relief='solid', background=CANVAS, foreground=TEXT, state='disabled')
@@ -1277,7 +1319,7 @@ around a flat surface and status chips are painted on a canvas.
                     self.events.put(('cancelled', None))
                 except Exception as error:
                     self._log('generation_failed', traceback.format_exc())
-                    text = str(error) if isinstance(error, DailyReportError) else '生成失败，请检查目录、权限和可用空间；详细原因见排查日志。'
+                    text = str(error) if isinstance(error, ArchiveError) else '生成失败，请检查目录、权限和可用空间；详细原因见排查日志。'
                     self.events.put(('error', text))
                 else:
                     try:
@@ -1311,6 +1353,8 @@ around a flat surface and status chips are painted on a canvas.
                         text += f" · 第 {data['current']} / {data['total']} 个导出"
                     if 'messages' in data:
                         text += f" · 已读取 {data['messages']:,} 条"
+                    if 'processedMessages' in data:
+                        text += f" · 已整理 {data['processedMessages']:,} / {data['totalMessages']:,} 条"
                     self.status.set(text + '…')
                 else:
                     self._set_busy(False)
@@ -1352,6 +1396,7 @@ around a flat surface and status chips are painted on a canvas.
             query, choice = (self.search.get().strip().casefold(), self.filter.get())
             rows = []
             self.followup_tree.delete(*self.followup_tree.get_children())
+            self.open_selected_button.configure(state='disabled')
             for index, row in enumerate(self.followups):
                 personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
                 if choice == '本人相关待跟进' and (not personal):
@@ -1377,6 +1422,7 @@ around a flat surface and status chips are painted on a canvas.
 
         def show_detail(self, _event=None):
             selected = self.followup_tree.selection()
+            self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
             if selected:
                 row = self.followups[int(selected[0])]
                 name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
@@ -1384,13 +1430,28 @@ around a flat surface and status chips are painted on a canvas.
 
         @staticmethod
         def _open_path(path):
-            if path.suffix.lower() == '.html':
+            if isinstance(path, str):
+                if not webbrowser.open(path):
+                    raise OSError('No browser accepted the selected original message')
+            elif path.suffix.lower() == '.html':
                 if not webbrowser.open(path.resolve().as_uri()):
                     raise OSError('No browser accepted the report')
             elif os.name == 'nt':
                 os.startfile(str(path))
             else:
                 webbrowser.open(path.resolve().as_uri())
+
+        def open_selected(self):
+            selected = self.followup_tree.selection()
+            if not self.result or not selected:
+                return
+            row = self.followups[int(selected[0])]
+            target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + row['evidenceId']
+            try:
+                self.opener(target)
+            except (OSError, ValueError):
+                self._log('open_selected_failed', traceback.format_exc())
+                self.status.set('暂时无法打开这条原文，可打开 HTML 日报查看；已有结果保留。')
 
         def open_result(self, key):
             if self.result:
@@ -1511,8 +1572,8 @@ def main(client, argv=None, *, standalone=False):
         parser.error('需要 --export-root、--date 和 --output。')
     try:
         result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output, version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
-    except (DailyReportError, OSError) as error:
-        result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
+    except (ArchiveError, OSError) as error:
+        result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, ArchiveError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
         print(json.dumps(result, ensure_ascii=False))
         return 2
     print(json.dumps(result, ensure_ascii=False))

@@ -26,6 +26,7 @@ TARGETS = (
     'test_daily_reports',
     'test_daily_distribution.StandaloneDistributionTests',
     'test_daily_ui',
+    'test_daily_refinements',
 )
 
 

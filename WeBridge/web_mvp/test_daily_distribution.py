@@ -50,6 +50,17 @@ def source_pair(base, client):
     return direct, group
 
 
+def quoted_requests(base, client):
+    return formal_export(base, client + '-引用回复', [
+        message(101, '请确认报价'),
+        message(102, '请安排发货', time='2026-10-27T09:01:00+08:00'),
+        message('reply', '已处理', own=True, kind='quote', time='2026-10-27T09:02:00+08:00',
+                quote={'sourceMessageId': 101, 'message': {'id': 101, 'text': '请确认报价'}}),
+        message('same-second', '请确认方案', time='2026-10-27T10:00:00+08:00'),
+        message('same-reply', '已处理', own=True, kind='quote', time='2026-10-27T10:00:00+08:00',
+                quote={'sourceMessageId': 'same-second'})], client=client)
+
+
 class StandaloneDistributionTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='synthetic-daily-standalone-')
@@ -105,6 +116,18 @@ class StandaloneDistributionTests(unittest.TestCase):
         result = run_process([sys.executable, '-I', '-S', script, '--interactive'], cwd=self.base)
         self.assertEqual(result.returncode, 2)
         self.assertIn('控制台', json.loads(result.stdout)['error'])
+
+    def test_isolated_single_files_link_numeric_and_same_second_quotes(self):
+        for client in ('wechat', 'wecom'):
+            with self.subTest(client=client):
+                root = quoted_requests(self.base, client)
+                output = self.base / (client + '-引用结果')
+                result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
+                                      '--export-root', root, '--output', output], cwd=self.base)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+                states = {item['text']: item['state'] for item in report['followups']}
+                self.assertEqual(states, {'请确认报价': 'completion_signal', '请安排发货': 'needs_response', '请确认方案': 'completion_signal'})
 
     def test_client_binding_and_workbuddy_frontmatter_are_explicit(self):
         with self.assertRaises(ValueError):
@@ -247,6 +270,21 @@ class WindowsDeliveryTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(marker.read_text(encoding='utf-8'), 'preserve original output')
         self.assertEqual([path.name for path in existing.iterdir()], ['preserve.txt'])
+
+    def test_native_quote_regressions_in_both_portable_and_skill_executables(self):
+        for client in ('wechat', 'wecom'):
+            root = quoted_requests(self.base, client)
+            for kind in ('portable', 'skill'):
+                with self.subTest(client=client, delivery=kind):
+                    directory = self.packages[client, kind]
+                    runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                    output = self.base / (client + '-' + kind + '-引用结果')
+                    result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
+                                          '--export-root', root, '--output', output], cwd=self.base)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+                    states = {item['text']: item['state'] for item in report['followups']}
+                    self.assertEqual(states, {'请确认报价': 'completion_signal', '请安排发货': 'needs_response', '请确认方案': 'completion_signal'})
 
 
 if __name__ == '__main__':

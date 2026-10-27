@@ -1,35 +1,56 @@
 {
   "schemaVersion": 1,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "date": "2026-10-27",
   "ok": true,
-  "uniqueTestsPassed": 45,
+  "uniqueTestsPassed": 55,
   "unresolvedFailures": 0,
   "unresolvedErrors": 0,
   "skipped": 0,
   "testGroups": {
     "dailyAndBusinessPresentation": 16,
-    "nativeDesktopAndCancellation": 10,
-    "standaloneDistribution": 6,
+    "targetedRefinements": 7,
+    "nativeDesktopAndCancellation": 11,
+    "standaloneDistribution": 7,
     "accountSourceRegression": 9,
-    "compiledWindowsDelivery": 4
+    "compiledWindowsDelivery": 5
   },
   "runs": [
     {
       "schemaVersion": 1,
       "date": "2026-10-27",
       "targets": [
-        "test_daily_ui",
+        "test_daily_refinements",
         "test_daily_reports",
-        "test_daily_distribution",
+        "test_daily_ui",
+        "test_daily_distribution.StandaloneDistributionTests",
         "test_runtime_identity",
         "test_windows_hook_smoke.SourceBindingTests"
       ],
-      "testsRun": 45,
+      "testsRun": 50,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 56.21,
+      "seconds": 14.82,
+      "ok": true,
+      "usesSyntheticData": true,
+      "realAccountValidation": false,
+      "compiledBinaryValidation": false,
+      "python": "3.14.6",
+      "platform": "win32",
+      "failedTests": []
+    },
+    {
+      "schemaVersion": 1,
+      "date": "2026-10-27",
+      "targets": [
+        "test_daily_distribution.WindowsDeliveryTests"
+      ],
+      "testsRun": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 34.52,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -48,7 +69,7 @@
   },
   "pythonSyntax": {
     "ok": true,
-    "files": 10
+    "files": 12
   },
   "powerShellBuildSyntax": true,
   "sourceSkillValidation": {
@@ -78,51 +99,51 @@
   "sourceScripts": [
     {
       "path": "standalone/wechat_daily_report.py",
-      "bytes": 114296,
-      "sha256": "7c3c8f3374c0fe3e6025d5c2060f6acb364ff8e81a80dfab639912a366567aa7"
+      "bytes": 117561,
+      "sha256": "bae2d7081bdb3b1ebbb1d9ffa8555c52551e7c62925af6b86e2651f46a662dcc"
     },
     {
       "path": "standalone/wecom_daily_report.py",
-      "bytes": 114294,
-      "sha256": "3a6e64d2b84a390aad6e475a27857699e6672ae4b62eaadcadbb6cabd18f4131"
+      "bytes": 117559,
+      "sha256": "e5529dd894c94d85a2d387a9d6fc47ff2c38e4ee7139d2e8785b222b2a7cb450"
     }
   ],
   "products": [
     {
       "client": "wechat",
       "delivery": "portable",
-      "directory": "WeChat-Daily-Report-1.2.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-1.2.0-Windows-x64.zip",
-      "version": "1.2.0",
-      "bytes": 26295226,
-      "sha256": "85a53a6a14c86bcd757f870d01f0a7d2cbf4927b3dc31cd6124c76adaa36acc2"
+      "directory": "WeChat-Daily-Report-1.3.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-1.3.0-Windows-x64.zip",
+      "version": "1.3.0",
+      "bytes": 26298236,
+      "sha256": "5b5980ce4cc906d85a8500c510f1bd1566463d6537c94bdcd5e58a1685c9fc83"
     },
     {
       "client": "wechat",
       "delivery": "skill",
-      "directory": "WeChat-Daily-Report-Skill-1.2.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-Skill-1.2.0-Windows-x64.zip",
-      "version": "1.2.0",
-      "bytes": 26297871,
-      "sha256": "2fab605a5b990d81507cd121a80216abe2f0b853a717be7bc60b2b475b52a5e8"
+      "directory": "WeChat-Daily-Report-Skill-1.3.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-Skill-1.3.0-Windows-x64.zip",
+      "version": "1.3.0",
+      "bytes": 26301400,
+      "sha256": "1060c53e13fefa8951c3c7a7e4ad945fb310ecba1f18a3a8254b91be26cb58d0"
     },
     {
       "client": "wecom",
       "delivery": "portable",
-      "directory": "WeCom-Daily-Report-1.2.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-1.2.0-Windows-x64.zip",
-      "version": "1.2.0",
-      "bytes": 26295719,
-      "sha256": "71e56d84c429a99400f52a9f0c2569a5c5b4f1587cd70d135c45cdc239002603"
+      "directory": "WeCom-Daily-Report-1.3.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-1.3.0-Windows-x64.zip",
+      "version": "1.3.0",
+      "bytes": 26298872,
+      "sha256": "a0900d27e0f6f56a33a8301e7374fcc4f191fcee6c35356d7edcc6e29d3431e0"
     },
     {
       "client": "wecom",
       "delivery": "skill",
-      "directory": "WeCom-Daily-Report-Skill-1.2.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-Skill-1.2.0-Windows-x64.zip",
-      "version": "1.2.0",
-      "bytes": 26298371,
-      "sha256": "4284514ddf1ab06de5c514294c7fe0c82caeb26959a4b12b397f5b93c7f02eba"
+      "directory": "WeCom-Daily-Report-Skill-1.3.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-Skill-1.3.0-Windows-x64.zip",
+      "version": "1.3.0",
+      "bytes": 26302037,
+      "sha256": "b483191dbc41b7b728dd339444f48f2aa6e019e2b70d3e6ccdd8fc77bbfb4c32"
     }
   ],
   "capabilities": {
@@ -130,7 +151,7 @@
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wechat",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "conversationModes": [
         "group",
         "direct"
@@ -147,7 +168,7 @@
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wecom",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "conversationModes": [
         "group",
         "direct"
@@ -165,7 +186,7 @@
     "wechat": {
       "ok": true,
       "client": "wechat",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -182,7 +203,7 @@
     "wecom": {
       "ok": true,
       "client": "wecom",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -218,7 +239,8 @@
     "tkScaling": 1.75,
     "actionsAndDetailsWithinVisibleBounds": true,
     "senderIdFallbackHiddenFromBusinessView": true,
-    "desktopScreenshotValidation": false
+    "desktopScreenshotValidation": false,
+    "selectedClueOpensMatchingHTMLEvidence": true
   },
   "realAccountValidation": false,
   "originalFaultHostValidation": false,
@@ -233,5 +255,92 @@
     "checked": 19,
     "broken": 0
   },
-  "sourceNewlineCompatibilityVerified": true
+  "sourceNewlineCompatibilityVerified": true,
+  "targetedRefinements": {
+    "numericQuoteIdentifiers": true,
+    "sameSecondRequiresExplicitQuote": true,
+    "resolvedSourcePrecedesEmbeddedIdentifier": true,
+    "malformedMentionTargetsRemainUncertain": true,
+    "cancellationDuringOrganization": true,
+    "dateWindowOverflowIsValidationError": true,
+    "publicationFailureJSON": {
+      "verified": true,
+      "faultInjection": true,
+      "exitCode": 2,
+      "originalFilesPreserved": true,
+      "temporaryStageCleaned": true
+    },
+    "singleFileAndNativeQuoteRegression": true
+  },
+  "redGreenEvidence": [
+    {
+      "case": "numeric",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 2,
+      "errorCount": 0
+    },
+    {
+      "case": "time",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 2,
+      "errorCount": 0
+    },
+    {
+      "case": "source-link",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 1,
+      "errorCount": 0
+    },
+    {
+      "case": "cancel",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 1,
+      "errorCount": 0
+    },
+    {
+      "case": "target",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 2,
+      "errorCount": 0
+    },
+    {
+      "case": "date",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 0,
+      "errorCount": 2
+    },
+    {
+      "case": "lock",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 0,
+      "errorCount": 1
+    },
+    {
+      "case": "original",
+      "failureObservedBeforeRepair": true,
+      "failureCount": 0,
+      "errorCount": 1
+    }
+  ],
+  "followupMatcherBenchmark": {
+    "syntheticOnly": true,
+    "requestCount": 1200,
+    "replyCount": 1200,
+    "runsPerVersion": 3,
+    "beforeSeconds": [
+      0.7442628999706358,
+      0.8233193999622017,
+      0.818833600031212
+    ],
+    "afterSeconds": [
+      0.0070801000110805035,
+      0.005207299953326583,
+      0.004925500019453466
+    ],
+    "beforeMedianSeconds": 0.818833600031212,
+    "afterMedianSeconds": 0.005207299953326583,
+    "resultSha256": "27297707e48d5d8b305cd0a3f01ea924143a48c404a2376382a22269b20f3fed",
+    "resultBytesIdentical": true,
+    "scope": "Matcher only; excludes source validation, reading and HTML writing"
+  }
 }

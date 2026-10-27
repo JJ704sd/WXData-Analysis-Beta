@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from offline_calendar import DatePicker
-from offline_daily import BEIJING, DailyReportCancelled, DailyReportError, build_daily_report
+from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report
 from offline_daily_html import _business_name
 from offline_theme import (ACCENT, BODY, BORDER, CANVAS, CAPTION, DISPLAY, SURFACE,
                            TEXT, TEXT_MUTED, apply_theme, card)
@@ -243,7 +243,11 @@ class DailyReportApp:
         horizontal.grid(row=1, column=0, sticky='ew')
         self.followup_tree.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
         self.followup_tree.bind('<<TreeviewSelect>>', self.show_detail)
-        ttk.Label(self.results, textvariable=self.result_count, style='Hint.TLabel').grid(row=4, column=0, sticky='ew', padx=14, pady=5)
+        selection_bar = tk.Frame(self.results, background=SURFACE)
+        selection_bar.grid(row=4, column=0, sticky='ew', padx=14, pady=5)
+        ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
+        self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
+        self.open_selected_button.pack(side='right', padx=(8, 0))
         detail_frame = tk.Frame(self.results, background=SURFACE)
         detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
         self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1,
@@ -382,7 +386,7 @@ class DailyReportApp:
                 self.events.put(('cancelled', None))
             except Exception as error:
                 self._log('generation_failed', traceback.format_exc())
-                text = str(error) if isinstance(error, DailyReportError) else '生成失败，请检查目录、权限和可用空间；详细原因见排查日志。'
+                text = str(error) if isinstance(error, ArchiveError) else '生成失败，请检查目录、权限和可用空间；详细原因见排查日志。'
                 self.events.put(('error', text))
             else:
                 # A preview failure must not turn an already published report into a failed generation.
@@ -418,6 +422,8 @@ class DailyReportApp:
                     text += f" · 第 {data['current']} / {data['total']} 个导出"
                 if 'messages' in data:
                     text += f" · 已读取 {data['messages']:,} 条"
+                if 'processedMessages' in data:
+                    text += f" · 已整理 {data['processedMessages']:,} / {data['totalMessages']:,} 条"
                 self.status.set(text + '…')
             else:
                 self._set_busy(False)
@@ -460,6 +466,7 @@ class DailyReportApp:
         query, choice = self.search.get().strip().casefold(), self.filter.get()
         rows = []
         self.followup_tree.delete(*self.followup_tree.get_children())
+        self.open_selected_button.configure(state='disabled')
         for index, row in enumerate(self.followups):
             personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
             if choice == '本人相关待跟进' and not personal:
@@ -486,6 +493,7 @@ class DailyReportApp:
 
     def show_detail(self, _event=None):
         selected = self.followup_tree.selection()
+        self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
         if selected:
             row = self.followups[int(selected[0])]
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
@@ -493,13 +501,28 @@ class DailyReportApp:
 
     @staticmethod
     def _open_path(path):
-        if path.suffix.lower() == '.html':
+        if isinstance(path, str):
+            if not webbrowser.open(path):
+                raise OSError('No browser accepted the selected original message')
+        elif path.suffix.lower() == '.html':
             if not webbrowser.open(path.resolve().as_uri()):
                 raise OSError('No browser accepted the report')
         elif os.name == 'nt':
             os.startfile(str(path))
         else:
             webbrowser.open(path.resolve().as_uri())
+
+    def open_selected(self):
+        selected = self.followup_tree.selection()
+        if not self.result or not selected:
+            return
+        row = self.followups[int(selected[0])]
+        target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + row['evidenceId']
+        try:
+            self.opener(target)
+        except (OSError, ValueError):
+            self._log('open_selected_failed', traceback.format_exc())
+            self.status.set('暂时无法打开这条原文，可打开 HTML 日报查看；已有结果保留。')
 
     def open_result(self, key):
         if self.result:

@@ -10,7 +10,7 @@ if not getattr(sys, 'frozen', False):
     sys.path.insert(0, str(PROJECT / 'web_mvp'))
 
 from chat_release import DAILY_REPORT_VERSION
-from offline_daily import DailyReportError, build_daily_report
+from offline_daily import ArchiveError, DailyReportError, build_daily_report
 
 
 def _interactive_values(args, label):
@@ -73,8 +73,8 @@ def main(client, argv=None, *, standalone=False):
     try:
         result = build_daily_report(args.export_root, client=client, day=args.date, output=args.output,
                                     version=DAILY_REPORT_VERSION, lookback_days=7 if args.lookback_days is None else args.lookback_days, my_names=args.my_name)
-    except (DailyReportError, OSError) as error:
-        result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, DailyReportError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
+    except (ArchiveError, OSError) as error:
+        result = {'ok': False, 'client': client, 'error': str(error) if isinstance(error, ArchiveError) else '本地材料无法读取或日报无法写入，请检查路径、权限及空间。'}
         print(json.dumps(result, ensure_ascii=False))
         return 2
     print(json.dumps(result, ensure_ascii=False))

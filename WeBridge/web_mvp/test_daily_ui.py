@@ -184,6 +184,25 @@ class DailyDesktopTests(unittest.TestCase):
         evidence = Path(app.result['evidenceFile']).read_text(encoding='utf-8')
         self.assertIn('synthetic-peer', evidence)
 
+    def test_selected_clue_opens_its_original_message_in_the_html_report(self):
+        app = self.create_app()
+        source = formal_export(self.base, 'clue-original', [message('request', '请确认报价')])
+        app._add_path(source)
+        app.generate()
+        self.pump(lambda: not app.busy)
+        self.assertIn('disabled', app.open_selected_button.state())
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        self.assertNotIn('disabled', app.open_selected_button.state())
+        app.open_selected()
+        target = self.opened[-1]
+        self.assertTrue(target.startswith(Path(app.result['htmlFile']).resolve().as_uri() + '#'))
+        anchor = target.rsplit('#', 1)[1]
+        self.assertIn('id="' + anchor + '"', Path(app.result['htmlFile']).read_text(encoding='utf-8'))
+        app.search.set('没有匹配的业务线索')
+        self.assertIn('disabled', app.open_selected_button.state())
+
     def test_date_picker_changes_selection_and_settings_do_not_auto_run_or_restore_old_date(self):
         app = self.create_app()
         picker = app.pick_date()

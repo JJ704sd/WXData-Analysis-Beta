@@ -4,7 +4,7 @@ import json
 GROUP_RELEASE = 'v71'
 GROUP_VERSION = '1.51.5'
 PRIVATE_VERSION = '1.20.3'
-DAILY_REPORT_VERSION = '1.2.0'
+DAILY_REPORT_VERSION = '1.3.0'
 
 
 def release_matrix():

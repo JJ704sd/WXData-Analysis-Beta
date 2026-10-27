@@ -258,6 +258,8 @@ def _target(row, my_names):
         return 'self', 'direct_conversation'
     mentions = row['mentions'] if isinstance(row['mentions'], dict) else {}
     ids = mentions.get('ids') or []
+    if not isinstance(ids, list) or any(not isinstance(value, str) for value in ids):
+        return 'unknown', 'group_target_unknown'
     if row['selfId'] in ids:
         return 'self', 'structured_mention'
     if ids:
@@ -267,46 +269,78 @@ def _target(row, my_names):
     return 'unknown', 'group_target_unknown'
 
 
-def _quote_targets(row, request):
+def _quote_ids(row):
     quote = row['content'].get('quote') or {}
-    linked = quote.get('sourceMessageId') or quote.get('messageId')
+    if not isinstance(quote, dict):
+        return set()
     message = quote.get('message') or {}
-    return linked == request['messageId'] or message.get('id') == request['messageId']
+    nested = message.get('id') if isinstance(message, dict) else None
+    def identifier(value):
+        return str(value) if isinstance(value, (str, int)) and not isinstance(value, bool) and value != '' else None
+    source = identifier(quote.get('sourceMessageId'))
+    if source is not None:
+        return {source}
+    return {value for value in (identifier(quote.get('messageId')), identifier(nested)) if value is not None}
 
 
-def _followups(records, my_names):
+def _followups(records, my_names, *, progress=None, cancel=None):
     groups = defaultdict(list)
-    for row in records:
+    for index, row in enumerate(records):
+        if index % 256 == 0:
+            _checkpoint(cancel)
         if row['time']:
             groups[row['chatId']].append(row)
-    results = []
+    results, processed = [], 0
+    total = sum(map(len, groups.values()))
     for rows in groups.values():
-        requests = [row for row in rows if row['direction'] != 'outgoing' and REQUEST.search(_primary(row))
-                    and not WITHDRAWAL.search(_primary(row))]
+        requests, responses = [], []
+        for row in rows:
+            if processed % 256 == 0:
+                _checkpoint(cancel)
+            body = _primary(row)
+            withdrawn = bool(WITHDRAWAL.search(body))
+            if row['direction'] != 'outgoing' and REQUEST.search(body) and not withdrawn:
+                requests.append(row)
+            if body and (row['direction'] == 'outgoing' or withdrawn):
+                responses.append((row, body))
+            processed += 1
+            if processed % 500 == 0 or processed == total:
+                _progress(progress, 'organizing', processedMessages=processed, totalMessages=total)
+                _checkpoint(cancel)
         request_times = [row['time'] for row in requests]
-        responses = [row for row in rows if _primary(row) and
-                     (row['direction'] == 'outgoing' or WITHDRAWAL.search(_primary(row)))]
+        # Index each explicit reply once. Unquoted private replies remain
+        # eligible only while exactly one earlier request exists.
+        candidates = defaultdict(list)
+        for index, (later, body) in enumerate(responses):
+            if index % 128 == 0:
+                _checkpoint(cancel)
+            identifiers = _quote_ids(later)
+            if len(identifiers) == 1:
+                candidates[next(iter(identifiers))].append((later, body, True))
+            elif (requests and later['conversationMode'] == 'direct' and not later['content'].get('quote')
+                  and later['time'] > requests[0]['time'] and bisect_right(request_times, later['time']) == 1):
+                candidates[requests[0]['messageId']].append((later, body, False))
         for request in requests:
+            _checkpoint(cancel)
             target, basis = _target(request, my_names)
             if target == 'other':
                 continue
             state = 'needs_response' if target == 'self' else 'identity_unknown' if basis == 'identity_unknown' else 'target_uncertain'
-            reply = None
-            for later in responses:
-                if later['time'] <= request['time'] or not _primary(later):
+            reply, reply_basis = None, None
+            for index, (later, body, explicit) in enumerate(candidates[request['messageId']]):
+                if index % 128 == 0:
+                    _checkpoint(cancel)
+                if later['time'] < request['time'] or (later['time'] == request['time'] and not explicit):
                     continue
-                explicit = _quote_targets(later, request)
-                competing = bisect_right(request_times, later['time'])
-                chronological = (request['conversationMode'] == 'direct' and competing == 1
-                                 and not later['content'].get('quote'))
-                if target != 'self' or not (explicit or chronological):
+                if target != 'self':
                     continue
                 if later['direction'] == 'outgoing':
                     reply = later
-                    body = _primary(later)
+                    reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
                     state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and not NEGATION.search(body) else 'responded'
-                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(_primary(later)):
+                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(body):
                     reply, state = later, 'withdrawal_signal'
+                    reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
             results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'],
                             'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'],
@@ -314,7 +348,7 @@ def _followups(records, my_names):
                             'text': request['text'], 'target': target, 'targetBasis': basis,
                             'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score,
                             'replyEvidenceId': reply['evidenceId'] if reply else None,
-                            'replyBasis': ('explicit_quote' if _quote_targets(reply, request) else 'direct_chronology') if reply else None,
+                            'replyBasis': reply_basis,
                             'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
@@ -332,9 +366,12 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
         raise DailyReportError('日期须为 YYYY-MM-DD。') from error
     if not isinstance(lookback_days, int) or not 1 <= lookback_days <= 90:
         raise DailyReportError('回看范围须为 1 至 90 天（含日报当天）。')
-    start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
-    day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
-    end = day_start + timedelta(days=1)
+    try:
+        start = datetime.combine(selected_day - timedelta(days=lookback_days - 1), datetime.min.time(), BEIJING)
+        day_start = datetime.combine(selected_day, datetime.min.time(), BEIJING)
+        end = day_start + timedelta(days=1)
+    except OverflowError as error:
+        raise DailyReportError('日报日期与回看天数超出可处理的日期范围，请调整后重试。') from error
     _checkpoint(cancel)
     _progress(progress, 'checking')
     roots, limitations = _roots(export_roots)
@@ -361,7 +398,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     _checkpoint(cancel)
     _progress(progress, 'organizing', messages=len(records))
     today = [row for row in records if row['time'] and day_start <= _moment(row['time']) < end]
-    followups = _followups(records, tuple(name.strip() for name in my_names if name.strip()))
+    followups = _followups(records, tuple(name.strip() for name in my_names if name.strip()), progress=progress, cancel=cancel)
     hours = Counter(_moment(row['time']).hour for row in today)
     directions = Counter(row['direction'] for row in today)
     conversations = []
