@@ -1,0 +1,3 @@
+# Optional for encrypted database copies and Zstandard message bodies.
+cryptography>=46,<47
+zstandard>=0.25,<0.26

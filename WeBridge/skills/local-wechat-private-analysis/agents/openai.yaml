@@ -1,0 +1,4 @@
+interface:
+  display_name: "个微私聊分析"
+  short_description: "解析个微私聊并在人工确认后沉淀带证据画像"
+  default_prompt: "使用个微私聊分析入口，让我选择联系人和日期；人工复核导出后，再生成并复核画像候选。"

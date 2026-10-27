@@ -1,0 +1,743 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-27",
+  "description": "Imported working source, including v69/v70 fixes not committed in the original checkout.",
+  "files": [
+    {
+      "path": "poc/wechat_agent_poc/__init__.py",
+      "sha256": "2811a4b85a1c6251e9a4cbac7bd4e727039785f1f85b3522439d4c6c4727e347"
+    },
+    {
+      "path": "poc/wechat_agent_poc/models.py",
+      "sha256": "52ffb773ff19c329606ea730cfa3d3753ffae9800bdba6e17e9aa78fe903e1be"
+    },
+    {
+      "path": "poc/wechat_agent_poc/process_own.py",
+      "sha256": "8e610c63da214dc6e8ad6869a6131679af099acc3ae17b70d45e8d89f17305c3"
+    },
+    {
+      "path": "poc/wechat_agent_poc/weixin_cipher_scan.py",
+      "sha256": "8065136c23c036cc694d592cdd930289d591a23e76df2ec16bc6b1b4d1f9013c"
+    },
+    {
+      "path": "WeBridge/AGENTS.md",
+      "sha256": "f552252811c09975069dbc464d3ba4a02ef787b3e192217b3347c3627673a6eb"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/企微Roaming目录发现修复-v68.md",
+      "sha256": "ca8e9c36b95812bf77846b969dd36c8fdcc7a3e3b4e56e29964e6b6d0d11001e"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/企微使用说明.md",
+      "sha256": "d1579ee18df73d51a83d918fcd362da66b33d54cddc22eee467ee0d30559662a"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/信息解析范围与准确性-v55.md",
+      "sha256": "c21161fbe35c23ac76845762fa22aa32ef650e4491b227da4c9ac0718d8848cf"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/复核导出流程.md",
+      "sha256": "8071daf066778862e662dcbd80eeaaa2bae79789acad8a56e48de3f7e86a3e35"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/异常中断资源释放-v54.md",
+      "sha256": "6702f271b5ebade4d11fc5772b70641cc85abc10628115107762bf50a5cd39a3"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/操作指南.md",
+      "sha256": "ad799743ad5a2f619b8f3e8619ae6dbf3e4a8957e56ef87ed9baa47eec3ccf91"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/版本与验证说明.md",
+      "sha256": "cc02c79c25667b17ade0ed1326f3b7f3c1ad5a7dd4f3dcce6aa358365afe5a21"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/界面滚动与长字段修复-v69.md",
+      "sha256": "ee142d8e5f3196ec7ee4ac6f67458dd4121ac7641a1836bfc030446df83d5cb3"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/目录发布占用修复-v70.md",
+      "sha256": "bd2828bb9a3fc063085d750ff20f493ed575010d1ef5db48a20ee92e7757928a"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/私聊内容完整性与复核提示-v66.md",
+      "sha256": "87be1559737431450fb04641cc329140efb4432d9d91fed977989ac09923e268"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/私聊分析助手-spec-v1.0-20261022.md",
+      "sha256": "79cb61e668362de229d9c67e449f792bcdb898c6606855b7ea52c9d501171f97"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/群聊企微引用修复-v51-20261023.md",
+      "sha256": "44c24c33f287dacfdc09eeaaafde61859aa5861f19a79ac188fc49969c9ff73f"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/群聊附件字符修复-v52-20261023.md",
+      "sha256": "a9855e84ca8f65fe9790babf6700d4f5e1aacecb29d401e9080499ad18fd3d35"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/配置迁移说明.md",
+      "sha256": "b88fc0670065eb525403b00cfcfabc11076a6e6cf8dde171428067f495a899a4"
+    },
+    {
+      "path": "WeBridge/docs/local-chat/附件正文解析说明.md",
+      "sha256": "a7d9f782a67d8454f8c2b3600b1a8f946313d3b87f069384372e4b0c21c67d15"
+    },
+    {
+      "path": "WeBridge/scripts/acquire_database_keys.py",
+      "sha256": "a3ab34cc55e236e58160b1f74f29b807418043134e0abe24c8262803f52473a2"
+    },
+    {
+      "path": "WeBridge/scripts/acquire_image_key.py",
+      "sha256": "0b9cc569156c57c3868fb4712e895b9c959252d7353156258bdfc4de3df017e9"
+    },
+    {
+      "path": "WeBridge/scripts/analyze_windows_hook_send.py",
+      "sha256": "ea1dae7438f71b19b0b9e46adcf39e7b0bb0b35914b05cb62ea5d9f4c0894835"
+    },
+    {
+      "path": "WeBridge/scripts/build_local_chat.ps1",
+      "sha256": "0d1db9e104a7c08738f4162ea5deaee03646321c5435ea577986bd58db98fd81"
+    },
+    {
+      "path": "WeBridge/scripts/build_private_chat.ps1",
+      "sha256": "d28a42c5cd515a5540483000443aef7886d68f7448beb8edf40e0c47cb8ac700"
+    },
+    {
+      "path": "WeBridge/scripts/check_runtime_identity.py",
+      "sha256": "74e39ed950748836ec71508b92db058c16226c54d4ddd95634854fddbb5ec852"
+    },
+    {
+      "path": "WeBridge/scripts/inspect_windows_hook_runtime.py",
+      "sha256": "1d2fa26c575c3f008a05ace74db8af5ba8dd2f77506db01b149fa52fef01187a"
+    },
+    {
+      "path": "WeBridge/scripts/licenses/Tcl-8.6.15-license.terms",
+      "sha256": "c0a69a2bfd757361ec7e6143973b103c90409316b49e9c88db26ad6388e79f16"
+    },
+    {
+      "path": "WeBridge/scripts/local_chat.py",
+      "sha256": "d2f5b3ce689cc7a6b862e223c84734721a2f8bca1e80011b8ab0a814df166613"
+    },
+    {
+      "path": "WeBridge/scripts/local_chat_app.py",
+      "sha256": "360bc90f077636a8cedbfcfbee16ce7c1669e6a19b489125ffe840fa8d045c13"
+    },
+    {
+      "path": "WeBridge/scripts/local_chat_bootstrap.py",
+      "sha256": "af0e68b0c3b81a640af127b3b9b269f375f41f607e6fb2573ae31dc50139ff0a"
+    },
+    {
+      "path": "WeBridge/scripts/local_chat_distribution.py",
+      "sha256": "00be4bada5489188b87fd3e5348072ca6a55d05b5ad86ed5032d1b6767ab84c5"
+    },
+    {
+      "path": "WeBridge/scripts/package_local_chat.py",
+      "sha256": "0f382601cd1e0c7d79c09d0ac178e8afaae94799a0bf1dd916dfced6fd4d850e"
+    },
+    {
+      "path": "WeBridge/scripts/package_local_chat_delivery.py",
+      "sha256": "e3eb3362a4e9ccdf9cb046c01d17a7307db116771af0992c9efe963144b2a51b"
+    },
+    {
+      "path": "WeBridge/scripts/package_local_chat_skill.py",
+      "sha256": "e37014a5289094cb97ddc2320dfb3c4fbe0a3a3e3a5bca440f884fea1bb1fa44"
+    },
+    {
+      "path": "WeBridge/scripts/package_private_chat.py",
+      "sha256": "4c8656c61a01047f6b3f1b9cd0c661e0ab87dcb371309d56ca68b4ff7578e8b6"
+    },
+    {
+      "path": "WeBridge/scripts/private_chat.py",
+      "sha256": "a6c9209cc8039fff4d391b3b4a13580b84572ec6990ab19adcb4340ca67d11bb"
+    },
+    {
+      "path": "WeBridge/scripts/requirements-offline-build.txt",
+      "sha256": "94eb068fd2690b1b3971b3be754d0eba4c964484d379c9b64bf8891b83b5585a"
+    },
+    {
+      "path": "WeBridge/scripts/run_windows_hook_smoke.py",
+      "sha256": "7f70c33cb2e0958cd8736ec207bd5b45026a83623a4b367d82c15e8e666afc18"
+    },
+    {
+      "path": "WeBridge/scripts/start_web_mvp.ps1",
+      "sha256": "a93b218f233a2b42c2e4192d218270844f70ec818bdfc14541ad74aec2cbccb2"
+    },
+    {
+      "path": "WeBridge/scripts/windows_ocr.ps1",
+      "sha256": "b6a608f7538db539dc3ed2d475a330e5735bf6186540e44e056311457fc9fadd"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/agents/openai.yaml",
+      "sha256": "1ee04481817ae22962a89dbe5df9f3bd3add20cab5237ba331f8a52570851185"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/references/attachment-content.md",
+      "sha256": "add2436cca98b4ad7675ade4e34783cd6b73d49a197973c94c442f7d26c191bd"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/references/input-and-errors.md",
+      "sha256": "81360999a99c9bef758ac05549c6020f3a5ac229b4b8ff30be565e07dad9cf41"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/scripts/run.ps1",
+      "sha256": "d57eea8388a4b386cea65816efdc44d4140d753068c4417f03f5d4d037457406"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/SKILL.md",
+      "sha256": "abde644e10bcff0172d47b1ab9fd76487059bb9baa6b5e94f0d80112ee79d802"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/Start-WeCom.cmd",
+      "sha256": "8b40dfe602095e34a73d732cd1df18914ce18b1273fb76d100f659d28c3aad29"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-archive/Start.cmd",
+      "sha256": "653a0222bd5ddff91d59692c196004460124d3cc39d5297ab1d38285d1ad27fb"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-private-analysis/agents/openai.yaml",
+      "sha256": "a0c476f539ab120e3057942ecd01977f55e8940fae7847f5ca621d4917358899"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-private-analysis/scripts/run.ps1",
+      "sha256": "3169d17e2f93f6ecb9c1c3e70e9a20086eb7ac20ecad3e6b88d1f891c038cd9e"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-private-analysis/SKILL.md",
+      "sha256": "f650e412d6e240704c61c852ca1869a7b1f3f78af37dfc6ff6a52337c332428e"
+    },
+    {
+      "path": "WeBridge/skills/local-wechat-private-analysis/Start.cmd",
+      "sha256": "653a0222bd5ddff91d59692c196004460124d3cc39d5297ab1d38285d1ad27fb"
+    },
+    {
+      "path": "WeBridge/skills/local-wecom-private-analysis/agents/openai.yaml",
+      "sha256": "e882005da019a3a5c12aa0062d8f490ef5a001aaef55ae9a2fdb920d4523ca65"
+    },
+    {
+      "path": "WeBridge/skills/local-wecom-private-analysis/scripts/run.ps1",
+      "sha256": "b8e829e25b55dfc647319e27cd5dc5d58ff90a69e501e20b973164938fb1b1ed"
+    },
+    {
+      "path": "WeBridge/skills/local-wecom-private-analysis/SKILL.md",
+      "sha256": "259b522c24f60f9fadc7e9b0b6a3cf7e6bc7228d223d269aff74d5e85d3479a9"
+    },
+    {
+      "path": "WeBridge/skills/local-wecom-private-analysis/Start.cmd",
+      "sha256": "653a0222bd5ddff91d59692c196004460124d3cc39d5297ab1d38285d1ad27fb"
+    },
+    {
+      "path": "WeBridge/web_mvp/backend.py",
+      "sha256": "8aa8086510f17cc3c890d414455b1fd322fcef9568e8764742bcb98d05f4f2a9"
+    },
+    {
+      "path": "WeBridge/web_mvp/container_bridge.py",
+      "sha256": "5af5fd1d877bdc5620b73312ebf743dcc9cbe28ec47f77e5f7761ef935676943"
+    },
+    {
+      "path": "WeBridge/web_mvp/database_adapter.py",
+      "sha256": "c87491d9173c61ff71b3c8ba10bf62f14fd1b768f48c1683cea89de49439b7b6"
+    },
+    {
+      "path": "WeBridge/web_mvp/database_snapshot.py",
+      "sha256": "4be5460db1d5a73037b621bdad311d5df8753fc54480b128ac7c75a4632a445d"
+    },
+    {
+      "path": "WeBridge/web_mvp/database_wal.py",
+      "sha256": "9fc5afcbe8f979a61a529c82cd809df088e8845f21cffd6615562a1ab721adde"
+    },
+    {
+      "path": "WeBridge/web_mvp/hook_account_safety.py",
+      "sha256": "ae6c5e0bf87887b52f2dd1fa5c19384032cf427ea8b054ecb46d0a3ace47d4f1"
+    },
+    {
+      "path": "WeBridge/web_mvp/inbound_messages.py",
+      "sha256": "2f40a39ebe637cea3badb490a331ed9e3111376bde699777cab273cebc4f2f92"
+    },
+    {
+      "path": "WeBridge/web_mvp/live_account_profiles.py",
+      "sha256": "717358227e6bdc14c22d17daa11fc03005fa40258dd51323e53209a98ffe9874"
+    },
+    {
+      "path": "WeBridge/web_mvp/local_image_keys.py",
+      "sha256": "b71a7a9246ed21aae49b3b73b7ea0fdf7c283bbc08001545bc0eb2764540bf33"
+    },
+    {
+      "path": "WeBridge/web_mvp/media_container.py",
+      "sha256": "ae80ccfbc1251d3e4ac9c5a487dc76a5940c1914fac3be7d4edf7beae26292b7"
+    },
+    {
+      "path": "WeBridge/web_mvp/media_host.py",
+      "sha256": "b965201fe80fe95927b55bb337008416efa5d82af80b35c004a5a1e6adf07df8"
+    },
+    {
+      "path": "WeBridge/web_mvp/message_history.py",
+      "sha256": "46e861efac35d050d350a31c60f739edb7e122a2012d0761e00e33c91c283ac0"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_account_profiles.py",
+      "sha256": "ab3b71faa84daa9c1b6069c7fcba6057a03e01fe5d6f7d500766150db859c71f"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_accounts.py",
+      "sha256": "de7e2c6c2c569758be44230046baeeccf16c38cdea777b0a3e23d323db5a8380"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_analysis.py",
+      "sha256": "bc8e5b6b30b7604d220d2f23a7abe0d4c611678e0b493d636ad97c1673cb24c3"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_batch.py",
+      "sha256": "543b00fc1f64fe45d3ed0fb5a614afe6d82623a45cca4b99d0bab5503886fec5"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_calendar.py",
+      "sha256": "7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_chat.py",
+      "sha256": "320651f9bf484e7b5e8262e151c582e40c078cfe507efdf3e03d9a3df16d86ce"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_completeness.py",
+      "sha256": "f244b4f79b1cab7a888f285afec27b997884f84f8bac2f9fce8fc8ad742b4921"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_content.py",
+      "sha256": "a1f32bb367e170913f9d43c83ff725a45af56dd257a451eeeb7a785d4c90b9fc"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_content_status.py",
+      "sha256": "20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_content_ui.py",
+      "sha256": "c444df53b86414e0c036780556bdd4dbdacfb70a96b9b7f8da4959a351d73594"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_desktop.py",
+      "sha256": "d4c60f9cba15277440aa0d22408325d6f43e97f4bfff28285a0e31d8b1c9b89e"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_direct.py",
+      "sha256": "ea78df0ebf289d50d729064410984643333f2031d12122e990d3233d079c819d"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_document_images.py",
+      "sha256": "ff82d0927db79051068c4f4eb61e060be2ccd01cc474127af793e03b9cfd916e"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_documents.py",
+      "sha256": "e6a56b7bd27ae954043e59f66761ab343f5b68c8d20568bcc9d5850593c0e9ec"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_gallery.py",
+      "sha256": "b89c9dab91b46c2e97b35a068cf5cd8d58f3659544908604dd1ae9a8429cc075"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_image_html.py",
+      "sha256": "5dafe4506852e3086bb17367cdb0c1e98a0e31122fa22230a93be0d9ab1521e8"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_images.py",
+      "sha256": "47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_launcher.py",
+      "sha256": "895edcdd3c1981c565d8ad0594ba15e75e1db05da4294a6a9566da854cfdd5e9"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_legacy_spreadsheet_annotations.py",
+      "sha256": "79ad3f3ce1a9901991b96ac9fe9fcbe7dcd5ca54dd497f047d1b01d01a7319ae"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_markdown.py",
+      "sha256": "a1c34a4f6e0ea432e6ecf45e97542fe96489612a4927934bf00eb726c7dac597"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_media_copy.py",
+      "sha256": "497f4d1b535fd363cfe7affe50290a01cd411523cbb2bfafd4fc5e798e7f042e"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_media_search.py",
+      "sha256": "76849498296baec78966bd26e38d7e8b53fffc81b3c44b03a991bc6c03c021bd"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_media_summary.py",
+      "sha256": "2cd13a16a3ed5cbc9c9cbd73519c2ec642bb797f8559682dc80f46aff48d63b8"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_pdf_forms.py",
+      "sha256": "03bd87555a3a084857032ed3fef931206a595ca5af8109d193a7763ed6fcc3d9"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_pdf_links.py",
+      "sha256": "1b5b346b4ce7546c9218a8c6e31be78ad83b12b90567552b19b8111316a88111"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_presentation_charts.py",
+      "sha256": "6eb0809bbe91ca521f74233c0a48b63d436d819e63d61bb3087bc3eb105f7c37"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_presentation_links.py",
+      "sha256": "5d8197da3f8a8b22c77aec5d7cff2d155aa28d78e200a3fb72bf8bcc7ab69605"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_presentation_tables.py",
+      "sha256": "c198ef2ccb5c6a714aa807c40db6813eae2f64607539367a69dece5bb811ada3"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_profiles.py",
+      "sha256": "d21d7507fa8ec4fbb43018344d5783fa6174bee904e7e4ccb4d944401f11964c"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_progress.py",
+      "sha256": "d471c3674d8ba0623138176605dabaf27956f51958d4363c0b285176855269bb"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_quality.py",
+      "sha256": "630f07bdb8486a5da73d3364ccd3759845ac421777999f14826b5484d70427a7"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_recovery_queue.py",
+      "sha256": "b56aa5080c3da5b933464ad3bcbd5e0a8595bc961ecea39c34013c2a12e0e212"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_reporting.py",
+      "sha256": "1463b10a8bebc0bc10aef9fde179005abdfafe877124bd498235cb1e3e423685"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_review.py",
+      "sha256": "9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_spreadsheet_annotations.py",
+      "sha256": "b51287af2581e57bf21f7466f5c1e7c9260372edd78a9b7b3ab5792610879b77"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_spreadsheet_visibility.py",
+      "sha256": "6ec3896b40a84e8b2a955298aeab7dc4374b23865307cdac707d0a4d5384f512"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_startup.py",
+      "sha256": "c3f9f020cb042c72b8599705056151e672a2a36a3005edf242635c7f3628cfd0"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_supplements.py",
+      "sha256": "0e4e8c7b6f137fb3e1d04b5a6a95ecfa1bfad054675282224b3c76815b1f63a1"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_theme.py",
+      "sha256": "6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_view.py",
+      "sha256": "b212eaa6fb375761168cb68e519516dad7fc265c4ece04780121f1825b01393c"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_widgets.py",
+      "sha256": "36b175e4e609be6cd8005a6fc1a22f3af755a6662a14a9cb3f060cf41c8e899c"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_windows_ocr.py",
+      "sha256": "dc24c81d159d26a13b05d9efcd01c1ab612999405ee91ab7ba99499cc5f133d4"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_word_annotations.py",
+      "sha256": "7e768ca367bacc5c2e444775a7df4678d6125c5e3b10a668ebbc41d9d0e68dc1"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_word_xml.py",
+      "sha256": "cd8140d6d7299d91cdde48d22196e583af92447dd751c655ca488022be610b8f"
+    },
+    {
+      "path": "WeBridge/web_mvp/offline_workflow.py",
+      "sha256": "aee9d6d82faee360e750b48b628675fbb37ad9698fb2f219884cce02538472f9"
+    },
+    {
+      "path": "WeBridge/web_mvp/portable_key_recovery.py",
+      "sha256": "0f5831600580bdea15509c258c4faa349b4ce9dfeef8edb36c43a7b0aa038aba"
+    },
+    {
+      "path": "WeBridge/web_mvp/private_insights.py",
+      "sha256": "d67ed867975ff54102f7729223883ca312bdf4b71cf24bbe08ae5c47b4b3677a"
+    },
+    {
+      "path": "WeBridge/web_mvp/private_insights_ui.py",
+      "sha256": "9486457da4eec9e3a1e1ae980d2acd2f9bb94bb040d1fc23c18a699778c977ee"
+    },
+    {
+      "path": "WeBridge/web_mvp/private_profile_ui.py",
+      "sha256": "d46634a1e47c701f57b3daf86af89597b15cdd8b0bcae53744399b23e8cf9fa0"
+    },
+    {
+      "path": "WeBridge/web_mvp/private_profiles.py",
+      "sha256": "41614125ff887835e58e3a983324dfbfff77046b8b86cd03e9ef4f3a35639574"
+    },
+    {
+      "path": "WeBridge/web_mvp/private_theme.py",
+      "sha256": "436103a568788ab283b3f70b62d16a1e248376c4c8d35d295dcfe9bc21494a55"
+    },
+    {
+      "path": "WeBridge/web_mvp/requirements-database.txt",
+      "sha256": "09daed84f4e379fd26b5539d1b92e9fb58903ec3151f429806289b85eb7c3f3e"
+    },
+    {
+      "path": "WeBridge/web_mvp/requirements.txt",
+      "sha256": "c7aaf9833ef34d1151e13013545a6b15f55511c59d7bd4bb25b713a713740eeb"
+    },
+    {
+      "path": "WeBridge/web_mvp/rich_content.py",
+      "sha256": "372ba36e706ab742237afdeab9fa9b4f8e137762936e7f3eb80e352223498921"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_analysis_coverage55.py",
+      "sha256": "5b0feaa8a3a442088677a69382c9ff6c92d6f46f8250880f2f66c33f4991ae6b"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_database_adapter.py",
+      "sha256": "5a6882f255bc1e9f46a3054fe3df9ba9b6ddfc82f3ef8f3ef00939e992a51fef"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_document_coverage55.py",
+      "sha256": "354ae90bdfa7a587d0c355f0770062a51f7231744fb9d1a2ec081fd3f75f5319"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_document_structure57.py",
+      "sha256": "f2a5f0f12c22938eb66cf2621aae7c10004e1edaeb420320d46494803e514db5"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_export_publication70.py",
+      "sha256": "70392d02ff2a957e3c04f96df34374be130d6adf4bd5f7d3cfe7569535a54668"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_export_resources54.py",
+      "sha256": "ceadcfa3963285d28da56fdc0be6474ea66cbd82a0826594cafaf3124b51f178"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_forward_semantics58.py",
+      "sha256": "55c5b35a00eb5c3f00aa6dddeaa9a59c193cd14a3394cc74e5681841ceff993b"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports53.py",
+      "sha256": "5b10227c58ffa82b0784001bba5c1cfea845f33b0aead28d97b3270788bccd53"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports55.py",
+      "sha256": "c28842e3b8aabbb6cb2a7259afeb8adb62712608d58da09080a7fef3a9798793"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports56.py",
+      "sha256": "5dc1a34907b693ccfbab200eeabdb1306e92aef8622260091d87fb215e072a14"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports57.py",
+      "sha256": "98c59582f4c03edb61980a446b12d3637efcc45317a0d2d0bb65820dd0e175e7"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports58.py",
+      "sha256": "f2d93c668ae6ae6ed53ffffd200287016e7914b3e959b39be07281ef7581d9eb"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports59.py",
+      "sha256": "4416576f6948cebddff7f5bc7bcbb6d37db5ec5cecfc8266b5f462ab2c0c9d77"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports60.py",
+      "sha256": "a32c1bbea494fd4bfcb11f702f806f78b970b5c3192ae997421df85e39d3bbd5"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports61.py",
+      "sha256": "350cc835a177657708f2e51dda0ec4139f83aa63aaa8529f67af4bc6cc6ee92a"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports62.py",
+      "sha256": "13c53bf6bd0ad31b426402e82713ae68f3cc3fe0c55075d636e20d327aeab74e"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports63.py",
+      "sha256": "a93cfc7507b45624009f5a3ee15b14549db07dff0e538e6d006413a7d45ec17b"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports64.py",
+      "sha256": "78352a2f5008dee442b52eead31997cae27dd75b71fed1ed12849c2040e90ad5"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports65.py",
+      "sha256": "c6894bd7c07ff2c8b4b593ec59062662e4664b45066605a28ece45eb31da7c97"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_four_exports66.py",
+      "sha256": "4c18ec60c71cdfab6f39e05d0ceb8482d0f78301356c3c6a255b5dafa2510f28"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_group_quote_schema51.py",
+      "sha256": "d80b6f57a65d6e7ae35df6a8ef1921377b0a40976dd8305a0c5becabc8e7b999"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_group_scrolling68.py",
+      "sha256": "65bf33e87717eeeeb6a31478bbfe8108300c8926e8c95bf432b496740c26b466"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_group_ui42.py",
+      "sha256": "6ee66a5f1706982674e48f81d5e4d99d15c0049553448ea767ec6895d08e943a"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_group_unicode52.py",
+      "sha256": "8f60998cd668430b7d1eb6cc5a87823a1f0e704b4b26f70d33a46153b27ad36b"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_legacy_annotations65.py",
+      "sha256": "75b807c34a27f640e27f6e44bffb8b64be8dfe3e35dc4bd0c698be2049db3ce3"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_legacy_spreadsheet58.py",
+      "sha256": "6184c9f4883b654592a87d15b4c2f95558417ee68229379218c126bbdb42bfec"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_offline_chat.py",
+      "sha256": "7d4e8c8f183bde834863e5e5bc6ba7a1e1579d9f2060b3fd1781b545a48c6c22"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_offline_documents.py",
+      "sha256": "83f42d9f55810819f83a045d89a80da21a454c2afec5fbd175ae47d499b06a90"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_offline_multiselect.py",
+      "sha256": "9fce7e42eba5bf95fb5b803d8f90f6080a3c82073cb89d97857f27cc5a2af101"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_pdf_comments63.py",
+      "sha256": "0651f8bfb3924dcbab16f8434859bfb55ac5ca8822c7a2993276421228868a3a"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_pdf_forms59.py",
+      "sha256": "e29346caa5c165e21f8ac9c73b5fed9846b16072c6f16633d65a507530de53f4"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_pdf_links62.py",
+      "sha256": "4c397608a4da48a393a6321b40360ad436edc2a10901186e9500940ac3ba0044"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_presentation_charts56.py",
+      "sha256": "23da20cb30b5818f6b6786a95bc8c12d046505671950c4f9de36ca2e21caa318"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_presentation_links62.py",
+      "sha256": "d7b077b3dd3ff2bfd0ade7aa117c1a5ee8ff0a977926e1a478fc9e06a579c811"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_presentation_tables61.py",
+      "sha256": "1ebccc5753b93a37af1290a64477283c8f13e64c313e25ba0f558abb62244911"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_presentation_visibility65.py",
+      "sha256": "1022ba3918d98032540b451ab3da59def0050140645268436d854442faa15b65"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_private_chat_distribution.py",
+      "sha256": "6151befa1abdf0e4bc10d2b1fcb08d4417f488e63a0a19b35141f44087ddc8d6"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_private_chat_integration.py",
+      "sha256": "67802415acb1d6d423333c20aa798d3eb4fe4d2553effdb23b12a1b6f5c6505f"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_private_evidence_integrity.py",
+      "sha256": "c99291cb81f2099aa8bb2b2fa8afd3f2c76c7c973e893022326ac8de39853564"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_private_profiles.py",
+      "sha256": "61432ead6cb8ae1452eff79f233fb152679d6ffaedf3aada8cdc1ea4c5ae4deb"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_private_search55.py",
+      "sha256": "33f9c952305394ffe9e400f5865273d4bb2be073cfe289654f58f8f7fc8b910c"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_runtime_identity.py",
+      "sha256": "e57fe029f17c1f28055c6a088d7f1edbc25e1c919e9f05cb6e6b161abab2098f"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_spreadsheet_annotations60.py",
+      "sha256": "ae2f5c2fec9071d7dbf8d08f98a15638f73daf50359e5b0b9be12a7ade1e0a97"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_spreadsheet_merges59.py",
+      "sha256": "6fc08ba30ffc0d7bd1c10f8c3a7cce1a13ed96f32652913e247299872cf2eda1"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_spreadsheet_semantics56.py",
+      "sha256": "215401d8c608037c6603b6c5a12d6bd869193671c970cfa68987e2fcc97ad426"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_spreadsheet_visibility61.py",
+      "sha256": "7c238ce3bb67a51f14287b75a68bfded91aa214e4da2c3300dd9d3e0c488c5dd"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_wecom_archive.py",
+      "sha256": "4f8b3035cbb47167403a1b29de2886b60b67833c172bd7b4f6166c48edd6e539"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_wecom_discovery68.py",
+      "sha256": "d31891fdb71759e1141bbd6ce9a9bef77e8bdf370cf6002bbe3c7cc9be8ee104"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_windows_hook_smoke.py",
+      "sha256": "3296d3d373537300b1872276809520c75e626c4e289335f685ddc6bb078f7218"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_windows_media.py",
+      "sha256": "5626dc46cba15cee16f04ac188039bbefe1baf1f547ea537db0bb9c0a61a643f"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_word_alternatives63.py",
+      "sha256": "d28f2180e6afed53d1edec22dd146bdd6c8c92a4638ec0642383140341ed5e47"
+    },
+    {
+      "path": "WeBridge/web_mvp/test_word_annotations60.py",
+      "sha256": "f910abafe8510be3f300eb1665adcb8ec789adb4f45353a532a66e359b450252"
+    },
+    {
+      "path": "WeBridge/web_mvp/video_download.py",
+      "sha256": "38032fbbd4c43a290dde431fd600053fe9fea941276ca2074f554fa3bbe1d0df"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_archive.py",
+      "sha256": "8615fed27afa56680915b9182742e537275506b35171c039a41adbe1550ab0cb"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_content.py",
+      "sha256": "4ab5e63205dffa4786fb665e1153008b10a61b6faff3e93031bf2891e6440f7c"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_crypto.py",
+      "sha256": "66d7b3c5ff6dd86361affd3c81da5a77bbfeb875667bc31452bc25f584824e4e"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_key_recovery.py",
+      "sha256": "726f2a13be95bf7e73c1ed6269e7a5a577ac39416a87fafbb153cb444ff1583c"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_media.py",
+      "sha256": "d39ca0505794a59a65817b6abf6dd20668d141d5200bdc6cd4a7fa5a60c0a900"
+    },
+    {
+      "path": "WeBridge/web_mvp/wecom_snapshot.py",
+      "sha256": "c876c71a95daa1b03af27c79bf3d538d87773982cf150dc67ef2066467b6fb6a"
+    },
+    {
+      "path": "WeBridge/web_mvp/windows_data_paths.py",
+      "sha256": "ec15a1e6e00ade8ea12a10b9297b40b64c1fd5d60627d6b857f5ea29ff0eb772"
+    },
+    {
+      "path": "WeBridge/web_mvp/windows_media.py",
+      "sha256": "f142131ab91040487fb2637eff2049ed7a6f56eed695774d24756df06696eb08"
+    },
+    {
+      "path": "WeBridge/个微聊天记录解析工具说明.md",
+      "sha256": "ece3eae0c76adfe5ea3cdbee95e43e2dbbb2574432071d7962d40a0b3b502d8f"
+    }
+  ]
+}
