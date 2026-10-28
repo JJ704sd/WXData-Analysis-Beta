@@ -29,6 +29,40 @@ def _business_gaps(row):
     return ' '.join(notes) or '当前未记录需要补充的信息。'
 
 
+def followup_text(item):
+    mode = {'direct': '私聊', 'group': '群聊'}.get(item.get('conversationMode'), '会话类型待确认')
+    lines = [mode + ' · ' + _business_name(item['chatName'], item['chatId'], '会话名称待确认'),
+             '发起人：' + item['senderName'], '请求时间：' + item['time'][:16].replace('T', ' '),
+             '当前进展：' + item['stateLabel'], '请求：' + item['text']]
+    if item.get('contentIssues'):
+        lines.append('请求内容提示：' + _business_gaps({'issues': item['contentIssues']}))
+    reply = item.get('reply')
+    if reply:
+        lines.extend(['后续回应：' + reply['senderName'] + ' · ' + reply['time'][:16].replace('T', ' '), reply['text']])
+        if reply.get('contentIssues'):
+            lines.append('后续回应提示：' + _business_gaps({'issues': reply['contentIssues']}))
+    else:
+        lines.append('后续回应：尚未找到可关联的回应。')
+    lines.append('候选线索须人工核对；回复、表示完成或取消均不等于业务结果已确认。')
+    return display_text('\n'.join(lines))
+
+
+def render_followups_text(report):
+    sections = [('本人相关待跟进', lambda item: item['target'] == 'self' and item['state'] not in {'completion_signal', 'withdrawal_signal'}),
+                ('对象或身份待确认', lambda item: item['target'] != 'self'),
+                ('处理 / 取消待核对', lambda item: item['state'] in {'completion_signal', 'withdrawal_signal'})]
+    parts = ['本地消息待跟进清单 · ' + report['date'],
+             '仅反映本次所选材料及回看范围；候选线索须人工核对。',
+             *('范围提示：' + note for note in report.get('notices', []))]
+    for title, include in sections:
+        selected = [item for item in report['followups'] if include(item)]
+        parts.append('\n' + title + '（' + str(len(selected)) + ' 条）')
+        parts.extend('\n' + str(index) + '. ' + followup_text(item) for index, item in enumerate(selected, 1))
+    if not report['followups']:
+        parts.append('\n当前材料未命中待跟进规则；不代表没有待办。')
+    return display_text('\n'.join(parts)) + '\n'
+
+
 def _business_content(content):
     esc = lambda value: html.escape(display_text(value), quote=True)
     parts = []
@@ -83,10 +117,20 @@ def render_report(report, records):
         group = 'signal' if state in {'completion_signal', 'withdrawal_signal'} else 'personal' if item['target'] == 'self' else 'uncertain'
         body = item['text']
         snippet = body[:180] + ('…' if len(body) > 180 else '')
-        cards.append('<article class="clue" data-group="' + group + '"><div class="clue-top"><span class="badge ' + group + '">'
+        reply = item.get('reply')
+        preview = ''
+        if reply:
+            preview = ('<div class="reply-preview"><p class="muted">后续回应 · ' + esc(reply['senderName']) + ' · '
+                       + esc(reply['time'][5:16].replace('T', ' ')) + '</p><p class="quote">' + esc(reply['text'][:160])
+                       + ('…' if len(reply['text']) > 160 else '') + '</p>'
+                       + ('<p class="muted">后续回应提示：' + esc(_business_gaps({'issues': reply['contentIssues']})) + '</p>' if reply['contentIssues'] else '')
+                       + '</div>')
+        mode = '私聊' if item.get('conversationMode') == 'direct' else '群聊'
+        cards.append('<article class="clue" data-group="' + group + '" data-mode="' + esc(item.get('conversationMode', ''))
+                     + '" data-search="' + esc(followup_text(item)) + '"><div class="clue-top"><span class="badge ' + group + '">'
                      + esc(item['stateLabel']) + '</span><span class="muted">' + esc(item['time'][5:16].replace('T', ' '))
-                     + '</span></div><h3>' + esc(_business_name(item['chatName'], item['chatId'], '会话名称待补充')) + '</h3><p class="quote">' + esc(snippet)
-                     + '</p><div class="clue-foot"><span>' + esc(_business_name(item['senderName'], by_id[item['evidenceId']]['senderId'], '发送人待确认')) + ' · '
+                     + '</span></div><h3>' + esc(mode + ' · ' + _business_name(item['chatName'], item['chatId'], '会话名称待补充')) + '</h3><p class="quote">' + esc(snippet)
+                     + '</p>' + preview + '<div class="clue-foot"><span>' + esc(_business_name(item['senderName'], by_id[item['evidenceId']]['senderId'], '发送人待确认')) + ' · '
                      + ('本人相关线索' if item['target'] == 'self' else '不能确认为本人待办') + '</span>'
                      + evidence_link(item['evidenceId']) + evidence_link(item['replyEvidenceId'], '后续回应依据') + '</div></article>')
     conversation_rows = ''.join('<tr><td>' + esc(_business_name(item['name'], item['id'], '会话名称待补充')) + '</td><td>'
@@ -161,28 +205,30 @@ def render_report(report, records):
 <header><div><div class="eyebrow">''' + esc(label) + '''</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">''' + esc(report['date']) + '''<div class="muted">北京时间</div></div></header>''' + notices + '''
 <div class="metrics" id="overview">''' + metrics + '''</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>
 <section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">''' + bars + '''</div></div></section>
-<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ''' + str(report['lookback']['days']) + ''' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索会话、原文或状态"><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="clues">''' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '''</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>
+<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ''' + str(report['lookback']['days']) + ''' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="downloads"><a href="followups.txt" download>下载待跟进清单</a></div><div class="clues">''' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '''</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>
 <section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>''' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '''</tbody></table></div></section>
 <section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">''' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '''</div><div><ul class="risk-list">''' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '''</ul></div></div></section>
 <section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ''' + str(overview['messagesWithGaps']) + ''' 条 · 回看材料共 ''' + str(len(gaps)) + ''' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">''' + ''.join(gaps) + '''</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>''' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '''</section>
 <section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>''' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '''</section>
 <section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>''' + source_rows + '''</tbody></table></div><ul class="limits">''' + limitations + '''</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ''' + esc(report['createdAt'][:16].replace('T', ' ')) + ''' · 本页含聊天原文，分享前请核对范围。</footer></main>
 <script>
-function bindFilters(searchId,filterId,selector,emptyId,countId){
+function bindFilters(searchId,filterId,selector,emptyId,countId,modeId){
   const search=document.getElementById(searchId),filter=document.getElementById(filterId),cards=[...document.querySelectorAll(selector)];
+  const mode=modeId?document.getElementById(modeId):null;
   function apply(){
     const query=search.value.toLocaleLowerCase();let visible=0;
     for(const card of cards){
       const body=card.dataset.search??card.textContent;
-      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value==='all'||card.dataset.group===filter.value));
+      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value==='all'||card.dataset.group===filter.value)&&(!mode||mode.value==='all'||card.dataset.mode===mode.value));
       if(!card.hidden)visible++;
     }
     document.getElementById(emptyId).hidden=visible>0||cards.length===0;
     if(countId)document.getElementById(countId).textContent='显示 '+visible+' / '+cards.length+' 条';
   }
   search.addEventListener('input',apply);filter.addEventListener('change',apply);apply();
+  if(mode)mode.addEventListener('change',apply);
 }
-bindFilters('clue-search','clue-filter','.clue','clue-empty');
+bindFilters('clue-search','clue-filter','.clue','clue-empty',null,'clue-mode');
 bindFilters('gap-search','gap-filter','.gap-card','gap-empty','gap-count');
 function reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName==='DETAILS')target.open=true;}
 window.addEventListener('hashchange',reveal);

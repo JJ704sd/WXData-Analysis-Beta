@@ -20,10 +20,23 @@ def gap_export(base, name, *, client='wechat'):
         message('normal', '普通确认')], client=client)
 
 
+def followup_export(base, name, *, client='wechat', mode='direct'):
+    return formal_export(base, name, [
+        message('trace-request-a', '请确认报价 ' + '业务正文 ' * 50 + '请求尾部独有词', mentions={'ids': ['synthetic-owner']}),
+        message('trace-request-b', '请确认方案', time='2026-10-27T09:01:00+08:00', mentions={'ids': ['synthetic-owner']}),
+        message('trace-request-c', '请安排发货', time='2026-10-27T09:02:00+08:00'),
+        message('trace-reply-a', '稍后回复，等待确认独有词', own=True, kind='quote', time='2026-10-27T10:00:00+08:00',
+                quote={'sourceMessageId': 'trace-request-a', 'message': {'text': '被引用第三方原文独有词', 'senderName': '第三方'}}),
+        message('trace-reply-b', '已处理，处理结果独有词', own=True, kind='quote', time='2026-10-27T11:00:00+08:00',
+                quote={'sourceMessageId': 'trace-request-b'},
+                attachmentContent={'extractionStatus': 'partial', 'text': '附件作者的正文'})], client=client, mode=mode)
+
+
 class GapCards(HTMLParser):
     def __init__(self, source):
         super().__init__()
         self.cards = []
+        self.clues = []
         self.gap_options = []
         self.in_gap_select = False
         self.feed(source)
@@ -32,6 +45,8 @@ class GapCards(HTMLParser):
         values = dict(attrs)
         if tag == 'article' and values.get('class') == 'gap-card':
             self.cards.append(values)
+        if tag == 'article' and values.get('class') == 'clue':
+            self.clues.append(values)
         if tag == 'select' and values.get('id') == 'gap-filter':
             self.in_gap_select = True
         if tag == 'option' and self.in_gap_select:
@@ -47,6 +62,66 @@ class DailyBusinessTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='synthetic-daily-business-')
         self.addCleanup(temporary.cleanup)
         self.base = Path(temporary.name)
+
+    def test_followup_previews_keep_the_matched_reply_and_its_content_gaps(self):
+        for client in ('wechat', 'wecom'):
+            for mode in ('direct', 'group'):
+                with self.subTest(client=client, mode=mode):
+                    name = client + '-' + mode
+                    source = followup_export(self.base, name, client=client, mode=mode)
+                    result = build_daily_report([source], client=client, day=DAY, output=self.base / (name + '-report'))
+                    report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+                    clues = {item['text'][:5]: item for item in report['followups']}
+                    self.assertTrue(all(item['conversationMode'] == mode for item in report['followups']))
+                    deferred = clues['请确认报价']
+                    self.assertEqual(deferred['state'], 'deferred')
+                    self.assertEqual(deferred['reply']['text'], '稍后回复，等待确认独有词')
+                    self.assertEqual(deferred['reply']['senderName'], '合成本人')
+                    self.assertEqual(deferred['reply']['time'], '2026-10-27T10:00:00+08:00')
+                    self.assertNotIn('被引用第三方原文独有词', deferred['reply']['text'])
+                    completed = clues['请确认方案']
+                    self.assertEqual(completed['state'], 'completion_signal')
+                    self.assertIn('document_partial', completed['reply']['contentIssues'])
+                    self.assertIsNone(clues['请安排发货']['reply'])
+
+    def test_business_checklist_contains_full_requests_replies_and_warnings_without_trace_ids(self):
+        for client in ('wechat', 'wecom'):
+            with self.subTest(client=client):
+                source = followup_export(self.base, client, client=client, mode='group')
+                before = {path.name: path.read_bytes() for path in source.iterdir()}
+                result = build_daily_report([source], client=client, day=DAY, output=self.base / (client + '-report'))
+                path = Path(result['followupsFile'])
+                text = path.read_text(encoding='utf-8-sig')
+                for value in ('本人相关待跟进', '对象或身份待确认', '处理 / 取消待核对',
+                              '请求尾部独有词', '稍后回复，等待确认独有词', '已处理，处理结果独有词',
+                              '后续回应提示：附件正文尚未完整读取', '候选线索须人工核对'):
+                    self.assertIn(value, text)
+                for value in ('trace-request', 'trace-reply', 'synthetic-owner', 'evidenceId', '被引用第三方原文独有词'):
+                    self.assertNotIn(value, text)
+                manifest = json.loads((path.parent / 'manifest.json').read_text(encoding='utf-8'))
+                self.assertIn('followups.txt', {item['path'] for item in manifest['files']})
+                self.assertEqual(before, {item.name: item.read_bytes() for item in source.iterdir()})
+
+    def test_checklist_is_not_limited_to_the_desktops_first_500_matches(self):
+        source = formal_export(self.base, 'many', [message('request-' + str(index), f'请确认报价，项目 {index:03}') for index in range(505)])
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'many-report')
+        self.assertEqual(result['overview']['personalFollowups'], 505)
+        text = Path(result['followupsFile']).read_text(encoding='utf-8-sig')
+        self.assertEqual(text.count('请求：请确认报价，项目'), 505)
+        self.assertIn('项目 504', text)
+
+    def test_html_clues_search_complete_requests_and_matched_replies_by_conversation_mode(self):
+        source = followup_export(self.base, 'business-html', mode='group')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'business-html-report')
+        html = Path(result['htmlFile']).read_text(encoding='utf-8')
+        cards = GapCards(html).clues
+        self.assertEqual(len(cards), 3)
+        self.assertTrue(all(card['data-mode'] == 'group' for card in cards))
+        self.assertTrue(any('请求尾部独有词' in card['data-search'] and '等待确认独有词' in card['data-search'] for card in cards))
+        self.assertTrue(all('被引用第三方原文独有词' not in card['data-search'] for card in cards))
+        self.assertEqual(html.count('class="reply-preview"'), 2)
+        self.assertIn('href="followups.txt"', html)
+        self.assertIn('id="clue-mode"', html)
 
     def test_empty_selected_day_warns_without_discarding_earlier_followups(self):
         for client in ('wechat', 'wecom'):

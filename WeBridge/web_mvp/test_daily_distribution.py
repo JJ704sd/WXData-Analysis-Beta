@@ -15,7 +15,7 @@ from offline_daily import build_daily_report
 from package_daily_reports import workbuddy_skill
 from test_daily_reports import DAY, formal_export, message
 from test_daily_history import unicode_export
-from test_daily_business import GapCards, gap_export
+from test_daily_business import GapCards, followup_export, gap_export
 
 
 def clean_environment():
@@ -79,6 +79,24 @@ def assert_business_report(test, process, output, *, empty_day):
     html = (output / 'report.html').read_text(encoding='utf-8')
     test.assertEqual(len(GapCards(html).cards), 3)
     test.assertIn('id="content-gaps"', html)
+
+
+def assert_followup_report(test, process, output):
+    test.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+    receipt = json.loads(process.stdout)
+    test.assertTrue(receipt['ok'])
+    test.assertEqual(Path(receipt['followupsFile']), output / 'followups.txt')
+    text = (output / 'followups.txt').read_text(encoding='utf-8-sig')
+    for value in ('请求尾部独有词', '稍后回复，等待确认独有词', '已处理，处理结果独有词', '后续回应提示：附件正文尚未完整读取'):
+        test.assertIn(value, text)
+    test.assertNotIn('trace-request', text)
+    test.assertNotIn('被引用第三方原文独有词', text)
+    html = (output / 'report.html').read_text(encoding='utf-8')
+    test.assertTrue(all(card['data-mode'] == 'group' for card in GapCards(html).clues))
+    test.assertEqual(html.count('class="reply-preview"'), 2)
+    manifest = json.loads((output / 'manifest.json').read_text(encoding='utf-8'))
+    item = next(item for item in manifest['files'] if item['path'] == 'followups.txt')
+    test.assertEqual(hashlib.sha256((output / item['path']).read_bytes()).hexdigest(), item['sha256'])
 
 
 class StandaloneDistributionTests(unittest.TestCase):
@@ -187,6 +205,15 @@ class StandaloneDistributionTests(unittest.TestCase):
                     result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', day,
                                           '--export-root', source, '--output', output], cwd=self.base)
                     assert_business_report(self, result, output, empty_day=empty_day)
+
+    def test_single_files_include_business_checklists_and_matched_reply_previews(self):
+        for client in ('wechat', 'wecom'):
+            with self.subTest(client=client):
+                source = followup_export(self.base, client, client=client, mode='group')
+                output = self.base / (client + '-followups')
+                result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
+                                      '--export-root', source, '--output', output], cwd=self.base)
+                assert_followup_report(self, result, output)
 
     def test_tracked_single_files_match_the_maintained_generation(self):
         for client in ('wechat', 'wecom'):
@@ -371,6 +398,19 @@ class WindowsDeliveryTests(unittest.TestCase):
                         result = run_process([directory / runtime['exeRelativePath'], '--date', day,
                                               '--export-root', source, '--output', output], cwd=self.base)
                         assert_business_report(self, result, output, empty_day=empty_day)
+
+
+    def test_native_checklists_and_reply_previews_in_both_delivery_formats(self):
+        for client in ('wechat', 'wecom'):
+            source = followup_export(self.base, client + '-followups', client=client, mode='group')
+            for kind in ('portable', 'skill'):
+                with self.subTest(client=client, delivery=kind):
+                    directory = self.packages[client, kind]
+                    runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                    output = self.base / (client + '-' + kind + '-followups')
+                    result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
+                                          '--export-root', source, '--output', output], cwd=self.base)
+                    assert_followup_report(self, result, output)
 
 
 if __name__ == '__main__':

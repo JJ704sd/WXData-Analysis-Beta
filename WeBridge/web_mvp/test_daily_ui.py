@@ -14,7 +14,7 @@ from offline_daily import DailyReportCancelled, DailyReportError, build_daily_re
 from offline_daily_ui import DailyReportApp
 from test_daily_distribution import source_pair
 from test_daily_history import unicode_export
-from test_daily_business import gap_export
+from test_daily_business import followup_export, gap_export
 from test_daily_reports import DAY, formal_export, message
 
 
@@ -206,6 +206,37 @@ class DailyDesktopTests(unittest.TestCase):
         app.gaps_button.invoke()
         self.assertEqual(self.opened[-1], Path(result['htmlFile']).resolve().as_uri() + '#content-gaps')
 
+    def test_conversation_filter_reply_search_and_selected_business_copy(self):
+        app = self.create_app()
+        roots = [followup_export(self.base, 'business-' + mode, mode=mode) for mode in ('direct', 'group')]
+        result = build_daily_report(roots, client='wechat', day=DAY, output=self.base / 'business-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        self.assertEqual(len(app.followup_tree.get_children()), 6)
+        app.mode_filter.set('仅群聊')
+        self.assertEqual(len(app.followup_tree.get_children()), 3)
+        app.filter.set('本人相关待跟进')
+        self.assertEqual(len(app.followup_tree.get_children()), 1)
+        app.search.set('等待确认独有词')
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        self.assertIn('稍后回复，等待确认独有词', app.detail.get('1.0', 'end'))
+        self.assertNotIn('disabled', app.copy_selected_button.state())
+        app.copy_selected_button.invoke()
+        copied = self.root.clipboard_get()
+        self.assertIn('请求尾部独有词', copied)
+        self.assertIn('稍后回复，等待确认独有词', copied)
+        self.assertIn('候选线索须人工核对', copied)
+        self.assertNotIn('trace-request', copied)
+        app.open_result('followupsFile')
+        self.assertEqual(self.opened[-1], Path(result['followupsFile']))
+        app.search.set('没有匹配的业务内容')
+        self.assertIn('disabled', app.copy_selected_button.state())
+        app.copy_selected()
+        self.assertEqual(self.root.clipboard_get(), copied)
+        app.clear_filters()
+        self.assertEqual(len(app.followup_tree.get_children()), 6)
+
     def test_unresolved_sender_name_keeps_identifier_out_of_business_preview(self):
         app = self.create_app()
         source = formal_export(self.base, 'unresolved-name', [message('request', '请确认报价', senderName='synthetic-peer')])
@@ -263,7 +294,7 @@ class DailyDesktopTests(unittest.TestCase):
         app = self.create_app()
         self.root.geometry('1000x700')
         self.root.update()
-        for widget in (app.generate_button, app.cancel_button, app.open_report_button, app.source_list):
+        for widget in (app.generate_button, app.cancel_button, app.open_report_button, app.checklist_button, app.source_list):
             self.assertGreater(widget.winfo_width(), 20)
             self.assertLessEqual(widget.winfo_rootx() + widget.winfo_width(), self.root.winfo_rootx() + self.root.winfo_width())
             self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(), self.root.winfo_rooty() + self.root.winfo_height())
@@ -274,7 +305,7 @@ class DailyDesktopTests(unittest.TestCase):
         self.assertGreater(app.source_list.xview()[0], 0)
         app.tabs.select(app.results)
         self.root.update()
-        for widget in (app.search_entry, app.filter_box, app.followup_tree, app.detail):
+        for widget in (app.search_entry, app.filter_box, app.mode_box, app.copy_selected_button, app.followup_tree, app.detail):
             self.assertGreater(widget.winfo_height(), 20)
             self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(), app.results.winfo_rooty() + app.results.winfo_height())
         app.followup_tree.xview_moveto(1)

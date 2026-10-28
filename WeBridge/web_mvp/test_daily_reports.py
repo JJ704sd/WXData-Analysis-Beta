@@ -221,7 +221,7 @@ class DailyReportTests(unittest.TestCase):
         self.assertIn('id="' + evidence[0]['evidenceId'] + '"', body)
         self.assertIn(payload, evidence[0]['text'])
         manifest = json.loads((self.base / 'report/manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual({row['path'] for row in manifest['files']}, {'report.html', 'report.json', 'evidence.jsonl', 'diagnostics.jsonl'})
+        self.assertEqual({row['path'] for row in manifest['files']}, {'report.html', 'report.json', 'evidence.jsonl', 'diagnostics.jsonl', 'followups.txt'})
         for row in manifest['files']:
             self.assertEqual(row['sha256'], hashlib.sha256((self.base / 'report' / row['path']).read_bytes()).hexdigest())
         self.assertFalse(report['unread']['available'])

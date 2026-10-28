@@ -368,11 +368,16 @@ def _followups(records, my_names, *, progress=None, cancel=None):
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
             results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'],
                             'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'],
+                            'conversationMode': request['conversationMode'],
                             'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认',
                             'text': request['text'], 'contentIssues': request['issues'], 'target': target, 'targetBasis': basis,
                             'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score,
                             'replyEvidenceId': reply['evidenceId'] if reply else None,
                             'replyBasis': reply_basis,
+                            'reply': {'time': reply['time'], 'text': reply['text'], 'direction': reply['direction'],
+                                      'senderName': str(reply['senderName']) if str(reply['senderName']) != reply['senderId'] else
+                                                    '本人' if reply['direction'] == 'outgoing' else '发送人待确认',
+                                      'contentIssues': reply['issues']} if reply else None,
                             'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
@@ -474,7 +479,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
               'limitations': list(dict.fromkeys(limitations)), 'notices': notices, 'unread': {'available': False},
               'evidenceFile': 'evidence.jsonl', 'diagnosticsFile': 'diagnostics.jsonl',
               'containsMessageText': True, 'humanReviewRequiredForFollowups': True}
-    from offline_daily_html import render_report
+    from offline_daily_html import render_followups_text, render_report
     _checkpoint(cancel)
     _progress(progress, 'writing')
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -500,6 +505,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
                       ('id', 'evidenceId', 'chatId', 'target', 'targetBasis', 'state', 'replyEvidenceId', 'replyBasis')})
             audit('scope_limitations', limitations=report['limitations'], notices=notices)
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
+        (stage / 'followups.txt').write_text(render_followups_text(report), encoding='utf-8-sig')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                      for path in sorted(stage.iterdir())]
         (stage / 'manifest.json').write_text(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client,
@@ -512,5 +518,6 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     return {'ok': True, 'client': client, 'date': day, 'version': version, 'output': str(destination.resolve()),
             'htmlFile': str(destination / 'report.html'), 'jsonFile': str(destination / 'report.json'),
             'evidenceFile': str(destination / 'evidence.jsonl'),
+            'followupsFile': str(destination / 'followups.txt'),
             'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview'],
             'notices': notices, 'contentGapCount': len(content_gaps)}

@@ -13,7 +13,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from offline_calendar import DatePicker
 from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report, display_text
-from offline_daily_html import _business_gaps, _business_name
+from offline_daily_html import _business_name, followup_text
 from offline_theme import (ACCENT, BODY, BORDER, CANVAS, CAPTION, DISPLAY, SURFACE,
                            TEXT, TEXT_MUTED, apply_theme, card)
 
@@ -40,6 +40,7 @@ class DailyReportApp:
         self.source_count = tk.StringVar(root, value='尚未添加导出')
         self.search = tk.StringVar(root)
         self.filter = tk.StringVar(root, value='全部线索')
+        self.mode_filter = tk.StringVar(root, value='全部会话')
         self.result_note = tk.StringVar(root, value='生成后可在这里查看概览、筛选线索，并打开完整 HTML 日报。')
         self.result_count = tk.StringVar(root, value='')
         self.metrics = [tk.StringVar(root, value='—') for _ in range(4)]
@@ -123,6 +124,8 @@ class DailyReportApp:
         self.copy_button.pack(side='left')
         self.gaps_button = self._button(tools, '查看待补充信息', self.open_gaps, state='disabled')
         self.gaps_button.pack(side='left', padx=8)
+        self.checklist_button = self._button(tools, '打开跟进清单', lambda: self.open_result('followupsFile'), state='disabled')
+        self.checklist_button.pack(side='left')
         self._button(tools, '排查日志', self.open_log, style='Quiet.TButton').pack(side='right')
 
     def _build_sources(self):
@@ -226,9 +229,13 @@ class DailyReportApp:
         self.filter_box = ttk.Combobox(bar, textvariable=self.filter, state='readonly', width=17,
                                        values=('全部线索', '本人相关待跟进', '对象或身份待确认', '处理信号待核对'))
         self.filter_box.pack(side='left')
+        self.mode_box = ttk.Combobox(bar, textvariable=self.mode_filter, state='readonly', width=9,
+                                     values=('全部会话', '仅私聊', '仅群聊'))
+        self.mode_box.pack(side='left', padx=(8, 0))
         self._button(bar, '清除筛选', self.clear_filters).pack(side='left', padx=(8, 0))
         self.search.trace_add('write', lambda *_: self.filter_followups())
         self.filter.trace_add('write', lambda *_: self.filter_followups())
+        self.mode_filter.trace_add('write', lambda *_: self.filter_followups())
         frame = tk.Frame(self.results, background=SURFACE)
         frame.grid(row=3, column=0, sticky='nsew', padx=14)
         frame.columnconfigure(0, weight=1)
@@ -250,6 +257,8 @@ class DailyReportApp:
         ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
         self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
         self.open_selected_button.pack(side='right', padx=(8, 0))
+        self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
+        self.copy_selected_button.pack(side='right', padx=(8, 0))
         detail_frame = tk.Frame(self.results, background=SURFACE)
         detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
         self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1,
@@ -458,7 +467,7 @@ class DailyReportApp:
                              ('' if report else ' 列表预览暂不可用，请打开 HTML 日报。'))
         self.status.set('日报已生成，可打开完整报告或继续选择其他日期。')
         self.clear_filters()
-        for button in (self.open_report_button, self.folder_button, self.copy_button):
+        for button in (self.open_report_button, self.folder_button, self.copy_button, self.checklist_button):
             button.configure(state='normal')
         self.gaps_button.configure(state='normal' if result.get('contentGapCount', 0) else 'disabled')
         self.tabs.select(self.results)
@@ -466,6 +475,7 @@ class DailyReportApp:
     def clear_filters(self):
         self.search.set('')
         self.filter.set('全部线索')
+        self.mode_filter.set('全部会话')
         self.filter_followups()
 
     def filter_followups(self):
@@ -473,7 +483,12 @@ class DailyReportApp:
         rows = []
         self.followup_tree.delete(*self.followup_tree.get_children())
         self.open_selected_button.configure(state='disabled')
+        self.copy_selected_button.configure(state='disabled')
         for index, row in enumerate(self.followups):
+            if self.mode_filter.get() == '仅私聊' and row.get('conversationMode') != 'direct':
+                continue
+            if self.mode_filter.get() == '仅群聊' and row.get('conversationMode') != 'group':
+                continue
             personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
             if choice == '本人相关待跟进' and not personal:
                 continue
@@ -482,7 +497,7 @@ class DailyReportApp:
             if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
                 continue
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-            if query and query not in display_text(' '.join((name, row['senderName'], row['text'], row['stateLabel']))).casefold():
+            if query and query not in followup_text(row).casefold():
                 continue
             rows.append((index, row, name))
         for index, row, name in rows[:500]:
@@ -500,11 +515,17 @@ class DailyReportApp:
     def show_detail(self, _event=None):
         selected = self.followup_tree.selection()
         self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
+        self.copy_selected_button.configure(state='normal' if selected else 'disabled')
         if selected:
             row = self.followups[int(selected[0])]
-            name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-            note = '\n\n' + _business_gaps({'issues': row['contentIssues']}) if row.get('contentIssues') else ''
-            self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}" + note)
+            self._set_detail(followup_text(row))
+
+    def copy_selected(self):
+        selected = self.followup_tree.selection()
+        if selected:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(followup_text(self.followups[int(selected[0])]))
+            self.status.set('线索已复制，包含完整请求、已关联回应及待核对提示。')
 
     @staticmethod
     def _open_path(path):

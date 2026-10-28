@@ -7,14 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=6208e65b7505e743118b3a9fbc5c5e78b339c09fbee5651f2604145236dcd043
+# scripts/chat_release.py sha256-utf8-lf=2a463334771f00a2465c04f2f984e5bbe83e38a590a902719f389147e87ffb01
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
-# web_mvp/offline_daily.py sha256-utf8-lf=dc459a5ea5caae20d7561a1521d35fef553b95f2c56b062e695e1e5d38fd782a
-# web_mvp/offline_daily_html.py sha256-utf8-lf=304caa09e0a345721200757c862078e04ecb70260c166dc75991602bc490616c
+# web_mvp/offline_daily.py sha256-utf8-lf=43edfa51ecd405114b31a7068f13c071ad962297df5d486f271a1bbdf9d0979e
+# web_mvp/offline_daily_html.py sha256-utf8-lf=12baf4860642e784df4640a488b2b206e4eb8050fdcc123c7e2f62c3d84a70c9
 # web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
 # web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
-# web_mvp/offline_daily_ui.py sha256-utf8-lf=4e885d8f9638fc6a8754cd991c3ba86be9710e287cc47a3463d3253acd2b0343
-# scripts/daily_report.py sha256-utf8-lf=7d516e27a22631df776a6fe4706a0d652ef06e8db6bfce9774398a6451aacf5e
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=264cceb3042c8d847442a8ff184b9fcc21b3f1c22ae8f9c89ef70cc3b5bcadb6
+# scripts/daily_report.py sha256-utf8-lf=7fd37560551397111ee211383f1f3698aeef878496b7e51f1340be7f1b3d66bd
 
 import os
 import time
@@ -85,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.4.0'
+DAILY_REPORT_VERSION = '1.5.0'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -476,7 +476,7 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                     reply, state = (later, 'withdrawal_signal')
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
-            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'contentIssues': request['issues'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': reply_basis, 'humanReviewRequired': True})
+            results.append({'id': 'f-' + request['evidenceId'][2:], 'evidenceId': request['evidenceId'], 'chatId': request['chatId'], 'chatName': request['chatName'], 'time': request['time'], 'conversationMode': request['conversationMode'], 'senderName': str(request['senderName']) if str(request['senderName']) != request['senderId'] else '发送人待确认', 'text': request['text'], 'contentIssues': request['issues'], 'target': target, 'targetBasis': basis, 'state': state, 'stateLabel': STATE_LABELS[state], 'priority': score, 'replyEvidenceId': reply['evidenceId'] if reply else None, 'replyBasis': reply_basis, 'reply': {'time': reply['time'], 'text': reply['text'], 'direction': reply['direction'], 'senderName': str(reply['senderName']) if str(reply['senderName']) != reply['senderId'] else '本人' if reply['direction'] == 'outgoing' else '发送人待确认', 'contentIssues': reply['issues']} if reply else None, 'humanReviewRequired': True})
     return sorted(results, key=lambda row: (-row['priority'], row['time'], row['id']))
 
 def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lookback_days=7, my_names=(), progress=None, cancel=None):
@@ -575,6 +575,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
                 audit('followup_linked', **{key: item[key] for key in ('id', 'evidenceId', 'chatId', 'target', 'targetBasis', 'state', 'replyEvidenceId', 'replyBasis')})
             audit('scope_limitations', limitations=report['limitations'], notices=notices)
         (stage / 'report.html').write_text(render_report(report, records), encoding='utf-8')
+        (stage / 'followups.txt').write_text(render_followups_text(report), encoding='utf-8-sig')
         checksums = [{'path': path.name, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(stage.iterdir())]
         (stage / 'manifest.json').write_text(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'date': day, 'version': version, 'files': checksums}, indent=2) + '\n', encoding='utf-8')
         _checkpoint(cancel)
@@ -582,7 +583,7 @@ def build_daily_report(export_roots, *, client, day, output, version='1.0.0', lo
     finally:
         if stage.exists():
             shutil.rmtree(stage)
-    return {'ok': True, 'client': client, 'date': day, 'version': version, 'output': str(destination.resolve()), 'htmlFile': str(destination / 'report.html'), 'jsonFile': str(destination / 'report.json'), 'evidenceFile': str(destination / 'evidence.jsonl'), 'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview'], 'notices': notices, 'contentGapCount': len(content_gaps)}
+    return {'ok': True, 'client': client, 'date': day, 'version': version, 'output': str(destination.resolve()), 'htmlFile': str(destination / 'report.html'), 'jsonFile': str(destination / 'report.json'), 'evidenceFile': str(destination / 'evidence.jsonl'), 'followupsFile': str(destination / 'followups.txt'), 'diagnosticsFile': str(destination / 'diagnostics.jsonl'), 'overview': report['overview'], 'notices': notices, 'contentGapCount': len(content_gaps)}
 'Self-contained, escaped HTML for daily reports; no external assets.'
 import html
 
@@ -607,6 +608,32 @@ def _business_gaps(row):
         if note not in notes:
             notes.append(note)
     return ' '.join(notes) or '当前未记录需要补充的信息。'
+
+def followup_text(item):
+    mode = {'direct': '私聊', 'group': '群聊'}.get(item.get('conversationMode'), '会话类型待确认')
+    lines = [mode + ' · ' + _business_name(item['chatName'], item['chatId'], '会话名称待确认'), '发起人：' + item['senderName'], '请求时间：' + item['time'][:16].replace('T', ' '), '当前进展：' + item['stateLabel'], '请求：' + item['text']]
+    if item.get('contentIssues'):
+        lines.append('请求内容提示：' + _business_gaps({'issues': item['contentIssues']}))
+    reply = item.get('reply')
+    if reply:
+        lines.extend(['后续回应：' + reply['senderName'] + ' · ' + reply['time'][:16].replace('T', ' '), reply['text']])
+        if reply.get('contentIssues'):
+            lines.append('后续回应提示：' + _business_gaps({'issues': reply['contentIssues']}))
+    else:
+        lines.append('后续回应：尚未找到可关联的回应。')
+    lines.append('候选线索须人工核对；回复、表示完成或取消均不等于业务结果已确认。')
+    return display_text('\n'.join(lines))
+
+def render_followups_text(report):
+    sections = [('本人相关待跟进', lambda item: item['target'] == 'self' and item['state'] not in {'completion_signal', 'withdrawal_signal'}), ('对象或身份待确认', lambda item: item['target'] != 'self'), ('处理 / 取消待核对', lambda item: item['state'] in {'completion_signal', 'withdrawal_signal'})]
+    parts = ['本地消息待跟进清单 · ' + report['date'], '仅反映本次所选材料及回看范围；候选线索须人工核对。', *('范围提示：' + note for note in report.get('notices', []))]
+    for title, include in sections:
+        selected = [item for item in report['followups'] if include(item)]
+        parts.append('\n' + title + '（' + str(len(selected)) + ' 条）')
+        parts.extend(('\n' + str(index) + '. ' + followup_text(item) for index, item in enumerate(selected, 1)))
+    if not report['followups']:
+        parts.append('\n当前材料未命中待跟进规则；不代表没有待办。')
+    return display_text('\n'.join(parts)) + '\n'
 
 def _business_content(content):
     esc = lambda value: html.escape(display_text(value), quote=True)
@@ -657,7 +684,12 @@ def render_report(report, records):
         group = 'signal' if state in {'completion_signal', 'withdrawal_signal'} else 'personal' if item['target'] == 'self' else 'uncertain'
         body = item['text']
         snippet = body[:180] + ('…' if len(body) > 180 else '')
-        cards.append('<article class="clue" data-group="' + group + '"><div class="clue-top"><span class="badge ' + group + '">' + esc(item['stateLabel']) + '</span><span class="muted">' + esc(item['time'][5:16].replace('T', ' ')) + '</span></div><h3>' + esc(_business_name(item['chatName'], item['chatId'], '会话名称待补充')) + '</h3><p class="quote">' + esc(snippet) + '</p><div class="clue-foot"><span>' + esc(_business_name(item['senderName'], by_id[item['evidenceId']]['senderId'], '发送人待确认')) + ' · ' + ('本人相关线索' if item['target'] == 'self' else '不能确认为本人待办') + '</span>' + evidence_link(item['evidenceId']) + evidence_link(item['replyEvidenceId'], '后续回应依据') + '</div></article>')
+        reply = item.get('reply')
+        preview = ''
+        if reply:
+            preview = '<div class="reply-preview"><p class="muted">后续回应 · ' + esc(reply['senderName']) + ' · ' + esc(reply['time'][5:16].replace('T', ' ')) + '</p><p class="quote">' + esc(reply['text'][:160]) + ('…' if len(reply['text']) > 160 else '') + '</p>' + ('<p class="muted">后续回应提示：' + esc(_business_gaps({'issues': reply['contentIssues']})) + '</p>' if reply['contentIssues'] else '') + '</div>'
+        mode = '私聊' if item.get('conversationMode') == 'direct' else '群聊'
+        cards.append('<article class="clue" data-group="' + group + '" data-mode="' + esc(item.get('conversationMode', '')) + '" data-search="' + esc(followup_text(item)) + '"><div class="clue-top"><span class="badge ' + group + '">' + esc(item['stateLabel']) + '</span><span class="muted">' + esc(item['time'][5:16].replace('T', ' ')) + '</span></div><h3>' + esc(mode + ' · ' + _business_name(item['chatName'], item['chatId'], '会话名称待补充')) + '</h3><p class="quote">' + esc(snippet) + '</p>' + preview + '<div class="clue-foot"><span>' + esc(_business_name(item['senderName'], by_id[item['evidenceId']]['senderId'], '发送人待确认')) + ' · ' + ('本人相关线索' if item['target'] == 'self' else '不能确认为本人待办') + '</span>' + evidence_link(item['evidenceId']) + evidence_link(item['replyEvidenceId'], '后续回应依据') + '</div></article>')
     conversation_rows = ''.join(('<tr><td>' + esc(_business_name(item['name'], item['id'], '会话名称待补充')) + '</td><td>' + ('群聊' if item['mode'] == 'group' else '私聊') + '</td><td>' + str(item['messages']) + '</td><td>' + str(item['speakers']) + '</td><td>' + ('未确认' if item['outgoing'] is None else str(item['outgoing'])) + '</td></tr>' for item in report['conversations']))
     topics = []
     for item in report['topics']:
@@ -692,7 +724,7 @@ def render_report(report, records):
     kpis = [('当日消息', overview['messages']), ('活跃会话', overview['activeConversations']), ('本人发出', outgoing), ('本人相关待跟进', overview['personalFollowups']), ('信息待补充', overview['messagesWithGaps']), ('处理 / 取消待核对', sum((item['state'] in {'completion_signal', 'withdrawal_signal'} for item in report['followups'])))]
     metrics = ''.join(('<div class="metric"><span>' + name + '</span><strong>' + esc(value) + '</strong></div>' for name, value in kpis))
     notices = '<div class="notice" role="status"><strong>材料范围提醒</strong><ul>' + ''.join(('<li>' + esc(note) + '</li>' for note in report.get('notices', []))) + '</ul></div>' if report.get('notices') else ''
-    return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">\n<title>' + esc(label + '每日消息整理 · ' + report['date']) + '</title><style>\n:root{--ink:#19343d;--muted:#657981;--line:#dbe5e6;--teal:#087c78;--paper:#fff;--bg:#f2f6f6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Microsoft YaHei","Segoe UI",sans-serif}a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#153b44;color:#e5f1ef;padding:32px 22px}aside strong{display:block;font-size:19px;letter-spacing:1px}aside p{font-size:12px;color:#a8c5c8}nav a{display:block;color:#d2e6e4;padding:10px 0}main{margin-left:210px;padding:35px 42px 70px;max-width:1600px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:2px}h1{font-size:31px;margin:5px 0}h2{font-size:20px;margin:0 0 18px}h3{font-size:16px;margin:10px 0}.muted,small{color:var(--muted);font-size:12px}.date{font-size:18px;font-weight:600;white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 16px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:27px;margin-top:6px}.notice{border-left:3px solid #d49a37;background:#fff8e9;padding:12px 16px;margin:20px 0 26px;font-size:13px}section{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:23px;scroll-margin-top:18px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:10px;margin-bottom:18px}input,select{font:inherit;font-size:13px;padding:9px 11px;border:1px solid #b9ccce;border-radius:6px;background:#fff;color:var(--ink)}input{min-width:0;flex:1}.clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.clue,.gap-card{border:1px solid var(--line);border-radius:10px;padding:17px;min-width:0}.clue-top,.clue-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.badge{font-size:11px;border-radius:4px;padding:3px 7px}.personal{background:#e4f3ef;color:#166855}.uncertain{background:#fff0d6;color:#91620c}.signal{background:#e8eef9;color:#465f91}.quote{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f8;border-radius:7px;padding:12px;font-size:13px}.clue-foot{color:var(--muted)}.evidence-link{font-size:12px;margin-left:8px}.chart{height:158px;display:flex;align-items:flex-end;gap:6px;min-width:530px}.chart-wrap,.table-wrap{overflow:auto}.hour{flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;min-width:15px}.hour i{display:block;width:80%;background:#409c96;border-radius:3px 3px 0 0}.hour span{font-size:10px;min-height:19px}.hour small{font-size:10px;margin-top:5px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic{background:#f4f8f8;padding:13px;border-radius:8px}.topic strong,.topic span{display:block}.topic span{color:var(--muted);font-size:12px}.risk-list{padding-left:20px}.risk-list p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:500}td small{display:block;overflow-wrap:anywhere}.path{max-width:380px;overflow-wrap:anywhere}.empty{color:var(--muted);background:#f5f8f8;padding:20px;border-radius:8px}.evidence{border-top:1px solid var(--line);padding:13px 0}.evidence:target{background:#fff8e5}.evidence summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}dl{font-size:12px}dt{color:var(--muted)}dd{margin-left:0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.limits{font-size:13px;padding-left:20px}.downloads{display:flex;gap:18px;font-size:13px;margin-top:18px}footer{margin-top:24px;font-size:12px;color:var(--muted)}[hidden]{display:none!important}\n@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}main{padding:28px}.two-col{grid-template-columns:1fr}}@media(max-width:720px){aside{position:static;width:auto;padding:20px}aside p{margin:3px 0}nav{display:flex;gap:18px;overflow:auto}nav a{white-space:nowrap;font-size:12px}main{margin:0;padding:20px 14px}header{display:block}.date{margin-top:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.clues{grid-template-columns:1fr}section{padding:17px}.controls{flex-direction:column}h1{font-size:27px}.topics{grid-template-columns:1fr}}\n@media print{aside,.controls{display:none}main{margin:0;padding:0}section,.clue{break-inside:avoid}.clues{display:block}.clue{margin-bottom:10px}body{background:#fff}}\n</style></head><body><aside><strong>本地消息 · 日报</strong><p>' + esc(label) + '</p><nav><a href="#overview">每日概览</a><a href="#followups">待跟进线索</a><a href="#conversations">会话分布</a><a href="#topics">主题与风险</a><a href="#content-gaps">待补充信息</a><a href="#evidence">查看原文</a><a href="#sources">统计范围</a></nav></aside><main>\n<header><div><div class="eyebrow">' + esc(label) + '</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">' + esc(report['date']) + '<div class="muted">北京时间</div></div></header>' + notices + '\n<div class="metrics" id="overview">' + metrics + '</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>\n<section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">' + bars + '</div></div></section>\n<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ' + str(report['lookback']['days']) + ' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索会话、原文或状态"><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="clues">' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>\n<section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '</tbody></table></div></section>\n<section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '</div><div><ul class="risk-list">' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '</ul></div></div></section>\n<section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ' + str(overview['messagesWithGaps']) + ' 条 · 回看材料共 ' + str(len(gaps)) + ' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">' + ''.join(gaps) + '</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '</section>\n<section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '</section>\n<section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>' + source_rows + '</tbody></table></div><ul class="limits">' + limitations + '</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ' + esc(report['createdAt'][:16].replace('T', ' ')) + ' · 本页含聊天原文，分享前请核对范围。</footer></main>\n<script>\nfunction bindFilters(searchId,filterId,selector,emptyId,countId){\n  const search=document.getElementById(searchId),filter=document.getElementById(filterId),cards=[...document.querySelectorAll(selector)];\n  function apply(){\n    const query=search.value.toLocaleLowerCase();let visible=0;\n    for(const card of cards){\n      const body=card.dataset.search??card.textContent;\n      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value===\'all\'||card.dataset.group===filter.value));\n      if(!card.hidden)visible++;\n    }\n    document.getElementById(emptyId).hidden=visible>0||cards.length===0;\n    if(countId)document.getElementById(countId).textContent=\'显示 \'+visible+\' / \'+cards.length+\' 条\';\n  }\n  search.addEventListener(\'input\',apply);filter.addEventListener(\'change\',apply);apply();\n}\nbindFilters(\'clue-search\',\'clue-filter\',\'.clue\',\'clue-empty\');\nbindFilters(\'gap-search\',\'gap-filter\',\'.gap-card\',\'gap-empty\',\'gap-count\');\nfunction reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName===\'DETAILS\')target.open=true;}\nwindow.addEventListener(\'hashchange\',reveal);\nfor(const link of document.querySelectorAll(\'a[href^="#"]\')){link.addEventListener(\'click\',event=>{const target=document.getElementById(link.getAttribute(\'href\').slice(1));if(target){event.preventDefault();if(target.tagName===\'DETAILS\')target.open=true;target.scrollIntoView({behavior:\'smooth\',block:\'start\'});}});}\nreveal();\n</script></body></html>'
+    return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">\n<title>' + esc(label + '每日消息整理 · ' + report['date']) + '</title><style>\n:root{--ink:#19343d;--muted:#657981;--line:#dbe5e6;--teal:#087c78;--paper:#fff;--bg:#f2f6f6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Microsoft YaHei","Segoe UI",sans-serif}a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#153b44;color:#e5f1ef;padding:32px 22px}aside strong{display:block;font-size:19px;letter-spacing:1px}aside p{font-size:12px;color:#a8c5c8}nav a{display:block;color:#d2e6e4;padding:10px 0}main{margin-left:210px;padding:35px 42px 70px;max-width:1600px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:2px}h1{font-size:31px;margin:5px 0}h2{font-size:20px;margin:0 0 18px}h3{font-size:16px;margin:10px 0}.muted,small{color:var(--muted);font-size:12px}.date{font-size:18px;font-weight:600;white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 16px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:27px;margin-top:6px}.notice{border-left:3px solid #d49a37;background:#fff8e9;padding:12px 16px;margin:20px 0 26px;font-size:13px}section{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:23px;scroll-margin-top:18px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:10px;margin-bottom:18px}input,select{font:inherit;font-size:13px;padding:9px 11px;border:1px solid #b9ccce;border-radius:6px;background:#fff;color:var(--ink)}input{min-width:0;flex:1}.clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.clue,.gap-card{border:1px solid var(--line);border-radius:10px;padding:17px;min-width:0}.clue-top,.clue-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.badge{font-size:11px;border-radius:4px;padding:3px 7px}.personal{background:#e4f3ef;color:#166855}.uncertain{background:#fff0d6;color:#91620c}.signal{background:#e8eef9;color:#465f91}.quote{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f8;border-radius:7px;padding:12px;font-size:13px}.clue-foot{color:var(--muted)}.evidence-link{font-size:12px;margin-left:8px}.chart{height:158px;display:flex;align-items:flex-end;gap:6px;min-width:530px}.chart-wrap,.table-wrap{overflow:auto}.hour{flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;min-width:15px}.hour i{display:block;width:80%;background:#409c96;border-radius:3px 3px 0 0}.hour span{font-size:10px;min-height:19px}.hour small{font-size:10px;margin-top:5px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic{background:#f4f8f8;padding:13px;border-radius:8px}.topic strong,.topic span{display:block}.topic span{color:var(--muted);font-size:12px}.risk-list{padding-left:20px}.risk-list p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:500}td small{display:block;overflow-wrap:anywhere}.path{max-width:380px;overflow-wrap:anywhere}.empty{color:var(--muted);background:#f5f8f8;padding:20px;border-radius:8px}.evidence{border-top:1px solid var(--line);padding:13px 0}.evidence:target{background:#fff8e5}.evidence summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}dl{font-size:12px}dt{color:var(--muted)}dd{margin-left:0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.limits{font-size:13px;padding-left:20px}.downloads{display:flex;gap:18px;font-size:13px;margin-top:18px}footer{margin-top:24px;font-size:12px;color:var(--muted)}[hidden]{display:none!important}\n@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}main{padding:28px}.two-col{grid-template-columns:1fr}}@media(max-width:720px){aside{position:static;width:auto;padding:20px}aside p{margin:3px 0}nav{display:flex;gap:18px;overflow:auto}nav a{white-space:nowrap;font-size:12px}main{margin:0;padding:20px 14px}header{display:block}.date{margin-top:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.clues{grid-template-columns:1fr}section{padding:17px}.controls{flex-direction:column}h1{font-size:27px}.topics{grid-template-columns:1fr}}\n@media print{aside,.controls{display:none}main{margin:0;padding:0}section,.clue{break-inside:avoid}.clues{display:block}.clue{margin-bottom:10px}body{background:#fff}}\n</style></head><body><aside><strong>本地消息 · 日报</strong><p>' + esc(label) + '</p><nav><a href="#overview">每日概览</a><a href="#followups">待跟进线索</a><a href="#conversations">会话分布</a><a href="#topics">主题与风险</a><a href="#content-gaps">待补充信息</a><a href="#evidence">查看原文</a><a href="#sources">统计范围</a></nav></aside><main>\n<header><div><div class="eyebrow">' + esc(label) + '</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">' + esc(report['date']) + '<div class="muted">北京时间</div></div></header>' + notices + '\n<div class="metrics" id="overview">' + metrics + '</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>\n<section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">' + bars + '</div></div></section>\n<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ' + str(report['lookback']['days']) + ' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="downloads"><a href="followups.txt" download>下载待跟进清单</a></div><div class="clues">' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>\n<section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '</tbody></table></div></section>\n<section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '</div><div><ul class="risk-list">' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '</ul></div></div></section>\n<section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ' + str(overview['messagesWithGaps']) + ' 条 · 回看材料共 ' + str(len(gaps)) + ' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">' + ''.join(gaps) + '</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '</section>\n<section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '</section>\n<section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>' + source_rows + '</tbody></table></div><ul class="limits">' + limitations + '</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ' + esc(report['createdAt'][:16].replace('T', ' ')) + ' · 本页含聊天原文，分享前请核对范围。</footer></main>\n<script>\nfunction bindFilters(searchId,filterId,selector,emptyId,countId,modeId){\n  const search=document.getElementById(searchId),filter=document.getElementById(filterId),cards=[...document.querySelectorAll(selector)];\n  const mode=modeId?document.getElementById(modeId):null;\n  function apply(){\n    const query=search.value.toLocaleLowerCase();let visible=0;\n    for(const card of cards){\n      const body=card.dataset.search??card.textContent;\n      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value===\'all\'||card.dataset.group===filter.value)&&(!mode||mode.value===\'all\'||card.dataset.mode===mode.value));\n      if(!card.hidden)visible++;\n    }\n    document.getElementById(emptyId).hidden=visible>0||cards.length===0;\n    if(countId)document.getElementById(countId).textContent=\'显示 \'+visible+\' / \'+cards.length+\' 条\';\n  }\n  search.addEventListener(\'input\',apply);filter.addEventListener(\'change\',apply);apply();\n  if(mode)mode.addEventListener(\'change\',apply);\n}\nbindFilters(\'clue-search\',\'clue-filter\',\'.clue\',\'clue-empty\',null,\'clue-mode\');\nbindFilters(\'gap-search\',\'gap-filter\',\'.gap-card\',\'gap-empty\',\'gap-count\');\nfunction reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName===\'DETAILS\')target.open=true;}\nwindow.addEventListener(\'hashchange\',reveal);\nfor(const link of document.querySelectorAll(\'a[href^="#"]\')){link.addEventListener(\'click\',event=>{const target=document.getElementById(link.getAttribute(\'href\').slice(1));if(target){event.preventDefault();if(target.tagName===\'DETAILS\')target.open=true;target.scrollIntoView({behavior:\'smooth\',block:\'start\'});}});}\nreveal();\n</script></body></html>'
 
 def run_daily_desktop(client, options, version):
     """Shared visual language for the native desktop surfaces.
@@ -1034,6 +1066,7 @@ around a flat surface and status chips are painted on a canvas.
             self.source_count = tk.StringVar(root, value='尚未添加导出')
             self.search = tk.StringVar(root)
             self.filter = tk.StringVar(root, value='全部线索')
+            self.mode_filter = tk.StringVar(root, value='全部会话')
             self.result_note = tk.StringVar(root, value='生成后可在这里查看概览、筛选线索，并打开完整 HTML 日报。')
             self.result_count = tk.StringVar(root, value='')
             self.metrics = [tk.StringVar(root, value='—') for _ in range(4)]
@@ -1113,6 +1146,8 @@ around a flat surface and status chips are painted on a canvas.
             self.copy_button.pack(side='left')
             self.gaps_button = self._button(tools, '查看待补充信息', self.open_gaps, state='disabled')
             self.gaps_button.pack(side='left', padx=8)
+            self.checklist_button = self._button(tools, '打开跟进清单', lambda: self.open_result('followupsFile'), state='disabled')
+            self.checklist_button.pack(side='left')
             self._button(tools, '排查日志', self.open_log, style='Quiet.TButton').pack(side='right')
 
         def _build_sources(self):
@@ -1212,9 +1247,12 @@ around a flat surface and status chips are painted on a canvas.
             self.search_entry.pack(side='left', fill='x', expand=True, padx=8)
             self.filter_box = ttk.Combobox(bar, textvariable=self.filter, state='readonly', width=17, values=('全部线索', '本人相关待跟进', '对象或身份待确认', '处理信号待核对'))
             self.filter_box.pack(side='left')
+            self.mode_box = ttk.Combobox(bar, textvariable=self.mode_filter, state='readonly', width=9, values=('全部会话', '仅私聊', '仅群聊'))
+            self.mode_box.pack(side='left', padx=(8, 0))
             self._button(bar, '清除筛选', self.clear_filters).pack(side='left', padx=(8, 0))
             self.search.trace_add('write', lambda *_: self.filter_followups())
             self.filter.trace_add('write', lambda *_: self.filter_followups())
+            self.mode_filter.trace_add('write', lambda *_: self.filter_followups())
             frame = tk.Frame(self.results, background=SURFACE)
             frame.grid(row=3, column=0, sticky='nsew', padx=14)
             frame.columnconfigure(0, weight=1)
@@ -1236,6 +1274,8 @@ around a flat surface and status chips are painted on a canvas.
             ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
             self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
             self.open_selected_button.pack(side='right', padx=(8, 0))
+            self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
+            self.copy_selected_button.pack(side='right', padx=(8, 0))
             detail_frame = tk.Frame(self.results, background=SURFACE)
             detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
             self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1, relief='solid', background=CANVAS, foreground=TEXT, state='disabled')
@@ -1437,7 +1477,7 @@ around a flat surface and status chips are painted on a canvas.
             self.result_note.set(f"{result['date']} · 仅统计选定材料。待跟进与处理信号需人工核对。" + ('\n' + scope_note if scope_note else '') + ('' if report else ' 列表预览暂不可用，请打开 HTML 日报。'))
             self.status.set('日报已生成，可打开完整报告或继续选择其他日期。')
             self.clear_filters()
-            for button in (self.open_report_button, self.folder_button, self.copy_button):
+            for button in (self.open_report_button, self.folder_button, self.copy_button, self.checklist_button):
                 button.configure(state='normal')
             self.gaps_button.configure(state='normal' if result.get('contentGapCount', 0) else 'disabled')
             self.tabs.select(self.results)
@@ -1445,6 +1485,7 @@ around a flat surface and status chips are painted on a canvas.
         def clear_filters(self):
             self.search.set('')
             self.filter.set('全部线索')
+            self.mode_filter.set('全部会话')
             self.filter_followups()
 
         def filter_followups(self):
@@ -1452,7 +1493,12 @@ around a flat surface and status chips are painted on a canvas.
             rows = []
             self.followup_tree.delete(*self.followup_tree.get_children())
             self.open_selected_button.configure(state='disabled')
+            self.copy_selected_button.configure(state='disabled')
             for index, row in enumerate(self.followups):
+                if self.mode_filter.get() == '仅私聊' and row.get('conversationMode') != 'direct':
+                    continue
+                if self.mode_filter.get() == '仅群聊' and row.get('conversationMode') != 'group':
+                    continue
                 personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
                 if choice == '本人相关待跟进' and (not personal):
                     continue
@@ -1461,7 +1507,7 @@ around a flat surface and status chips are painted on a canvas.
                 if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
                     continue
                 name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-                if query and query not in display_text(' '.join((name, row['senderName'], row['text'], row['stateLabel']))).casefold():
+                if query and query not in followup_text(row).casefold():
                     continue
                 rows.append((index, row, name))
             for index, row, name in rows[:500]:
@@ -1478,11 +1524,17 @@ around a flat surface and status chips are painted on a canvas.
         def show_detail(self, _event=None):
             selected = self.followup_tree.selection()
             self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
+            self.copy_selected_button.configure(state='normal' if selected else 'disabled')
             if selected:
                 row = self.followups[int(selected[0])]
-                name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
-                note = '\n\n' + _business_gaps({'issues': row['contentIssues']}) if row.get('contentIssues') else ''
-                self._set_detail(f"{name} · {row['senderName']} · {row['time'][:16].replace('T', ' ')}\n{row['stateLabel']}\n\n{row['text']}" + note)
+                self._set_detail(followup_text(row))
+
+        def copy_selected(self):
+            selected = self.followup_tree.selection()
+            if selected:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(followup_text(self.followups[int(selected[0])]))
+                self.status.set('线索已复制，包含完整请求、已关联回应及待核对提示。')
 
         @staticmethod
         def _open_path(path):
@@ -1621,7 +1673,7 @@ def main(client, argv=None, *, standalone=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
+        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or (not arguments):
         return run_daily_desktop(client, args, DAILY_REPORT_VERSION)
