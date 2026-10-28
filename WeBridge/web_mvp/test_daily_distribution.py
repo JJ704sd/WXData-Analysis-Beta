@@ -94,6 +94,8 @@ def assert_followup_report(test, process, output):
     html = (output / 'report.html').read_text(encoding='utf-8')
     test.assertTrue(all(card['data-mode'] == 'group' for card in GapCards(html).clues))
     test.assertEqual(html.count('class="reply-preview"'), 2)
+    test.assertIn('id="clue-download-filtered"', html)
+    test.assertIn('id="clue-count"', html)
     manifest = json.loads((output / 'manifest.json').read_text(encoding='utf-8'))
     item = next(item for item in manifest['files'] if item['path'] == 'followups.txt')
     test.assertEqual(hashlib.sha256((output / item['path']).read_bytes()).hexdigest(), item['sha256'])

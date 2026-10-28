@@ -58,6 +58,7 @@ def main(client, argv=None, *, standalone=False):
                           'desktopUI': True,
                           'scopeNotices': True, 'contentGapReview': True,
                           'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True,
+                          'filteredChecklist': True, 'followupPagination': True,
                           'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or not arguments:

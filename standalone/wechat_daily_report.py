@@ -7,14 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=2a463334771f00a2465c04f2f984e5bbe83e38a590a902719f389147e87ffb01
+# scripts/chat_release.py sha256-utf8-lf=894306de0ca2c9033569f95eb746b4b47ed6caa8781686e1c4c6b24dbccffeba
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
 # web_mvp/offline_daily.py sha256-utf8-lf=43edfa51ecd405114b31a7068f13c071ad962297df5d486f271a1bbdf9d0979e
-# web_mvp/offline_daily_html.py sha256-utf8-lf=12baf4860642e784df4640a488b2b206e4eb8050fdcc123c7e2f62c3d84a70c9
+# web_mvp/offline_daily_html.py sha256-utf8-lf=df14971a9a2d236a937805e1fa2288b30bbad10d9c4261c32177bc6fd8b6b181
 # web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
 # web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
-# web_mvp/offline_daily_ui.py sha256-utf8-lf=264cceb3042c8d847442a8ff184b9fcc21b3f1c22ae8f9c89ef70cc3b5bcadb6
-# scripts/daily_report.py sha256-utf8-lf=7fd37560551397111ee211383f1f3698aeef878496b7e51f1340be7f1b3d66bd
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=0f559cfe35e65d2820c4c204b539006c198253f9ee9ab46c0c8affe2c7ec05d6
+# scripts/daily_report.py sha256-utf8-lf=46dfe2408ba368909d19936472e8ab27f523f551221e2b125f8777eee75a6cae
 
 import os
 import time
@@ -85,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.5.0'
+DAILY_REPORT_VERSION = '1.6.0'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -624,15 +624,26 @@ def followup_text(item):
     lines.append('候选线索须人工核对；回复、表示完成或取消均不等于业务结果已确认。')
     return display_text('\n'.join(lines))
 
-def render_followups_text(report):
-    sections = [('本人相关待跟进', lambda item: item['target'] == 'self' and item['state'] not in {'completion_signal', 'withdrawal_signal'}), ('对象或身份待确认', lambda item: item['target'] != 'self'), ('处理 / 取消待核对', lambda item: item['state'] in {'completion_signal', 'withdrawal_signal'})]
-    parts = ['本地消息待跟进清单 · ' + report['date'], '仅反映本次所选材料及回看范围；候选线索须人工核对。', *('范围提示：' + note for note in report.get('notices', []))]
-    for title, include in sections:
-        selected = [item for item in report['followups'] if include(item)]
+def followup_group(item):
+    if item['state'] in {'completion_signal', 'withdrawal_signal'}:
+        return 'signal'
+    return 'personal' if item['target'] == 'self' else 'uncertain'
+
+def _followup_header(report, filtered=False):
+    return ['本地消息' + ('当前筛选清单' if filtered else '待跟进清单') + ' · ' + report['date'], '仅反映本次所选材料及回看范围；候选线索须人工核对。', *('范围提示：' + note for note in report.get('notices', []))]
+
+def render_followups_text(report, *, items=None, filters=()):
+    filtered = items is not None
+    items = report['followups'] if items is None else list(items)
+    parts = _followup_header(report, filtered)
+    if filtered:
+        parts.extend(['筛选范围：' + ' · '.join(filters), f"匹配 {len(items)} / 全部 {len(report['followups'])} 条"])
+    for group, title in (('personal', '本人相关待跟进'), ('uncertain', '对象或身份待确认'), ('signal', '处理 / 取消待核对')):
+        selected = [item for item in items if followup_group(item) == group]
         parts.append('\n' + title + '（' + str(len(selected)) + ' 条）')
         parts.extend(('\n' + str(index) + '. ' + followup_text(item) for index, item in enumerate(selected, 1)))
-    if not report['followups']:
-        parts.append('\n当前材料未命中待跟进规则；不代表没有待办。')
+    if not items:
+        parts.append('\n当前筛选下没有线索。' if filtered else '\n当前材料未命中待跟进规则；不代表没有待办。')
     return display_text('\n'.join(parts)) + '\n'
 
 def _business_content(content):
@@ -681,7 +692,7 @@ def render_report(report, records):
     cards = []
     for item in report['followups']:
         state = item['state']
-        group = 'signal' if state in {'completion_signal', 'withdrawal_signal'} else 'personal' if item['target'] == 'self' else 'uncertain'
+        group = followup_group(item)
         body = item['text']
         snippet = body[:180] + ('…' if len(body) > 180 else '')
         reply = item.get('reply')
@@ -724,7 +735,7 @@ def render_report(report, records):
     kpis = [('当日消息', overview['messages']), ('活跃会话', overview['activeConversations']), ('本人发出', outgoing), ('本人相关待跟进', overview['personalFollowups']), ('信息待补充', overview['messagesWithGaps']), ('处理 / 取消待核对', sum((item['state'] in {'completion_signal', 'withdrawal_signal'} for item in report['followups'])))]
     metrics = ''.join(('<div class="metric"><span>' + name + '</span><strong>' + esc(value) + '</strong></div>' for name, value in kpis))
     notices = '<div class="notice" role="status"><strong>材料范围提醒</strong><ul>' + ''.join(('<li>' + esc(note) + '</li>' for note in report.get('notices', []))) + '</ul></div>' if report.get('notices') else ''
-    return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">\n<title>' + esc(label + '每日消息整理 · ' + report['date']) + '</title><style>\n:root{--ink:#19343d;--muted:#657981;--line:#dbe5e6;--teal:#087c78;--paper:#fff;--bg:#f2f6f6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Microsoft YaHei","Segoe UI",sans-serif}a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#153b44;color:#e5f1ef;padding:32px 22px}aside strong{display:block;font-size:19px;letter-spacing:1px}aside p{font-size:12px;color:#a8c5c8}nav a{display:block;color:#d2e6e4;padding:10px 0}main{margin-left:210px;padding:35px 42px 70px;max-width:1600px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:2px}h1{font-size:31px;margin:5px 0}h2{font-size:20px;margin:0 0 18px}h3{font-size:16px;margin:10px 0}.muted,small{color:var(--muted);font-size:12px}.date{font-size:18px;font-weight:600;white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 16px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:27px;margin-top:6px}.notice{border-left:3px solid #d49a37;background:#fff8e9;padding:12px 16px;margin:20px 0 26px;font-size:13px}section{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:23px;scroll-margin-top:18px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:10px;margin-bottom:18px}input,select{font:inherit;font-size:13px;padding:9px 11px;border:1px solid #b9ccce;border-radius:6px;background:#fff;color:var(--ink)}input{min-width:0;flex:1}.clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.clue,.gap-card{border:1px solid var(--line);border-radius:10px;padding:17px;min-width:0}.clue-top,.clue-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.badge{font-size:11px;border-radius:4px;padding:3px 7px}.personal{background:#e4f3ef;color:#166855}.uncertain{background:#fff0d6;color:#91620c}.signal{background:#e8eef9;color:#465f91}.quote{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f8;border-radius:7px;padding:12px;font-size:13px}.clue-foot{color:var(--muted)}.evidence-link{font-size:12px;margin-left:8px}.chart{height:158px;display:flex;align-items:flex-end;gap:6px;min-width:530px}.chart-wrap,.table-wrap{overflow:auto}.hour{flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;min-width:15px}.hour i{display:block;width:80%;background:#409c96;border-radius:3px 3px 0 0}.hour span{font-size:10px;min-height:19px}.hour small{font-size:10px;margin-top:5px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic{background:#f4f8f8;padding:13px;border-radius:8px}.topic strong,.topic span{display:block}.topic span{color:var(--muted);font-size:12px}.risk-list{padding-left:20px}.risk-list p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:500}td small{display:block;overflow-wrap:anywhere}.path{max-width:380px;overflow-wrap:anywhere}.empty{color:var(--muted);background:#f5f8f8;padding:20px;border-radius:8px}.evidence{border-top:1px solid var(--line);padding:13px 0}.evidence:target{background:#fff8e5}.evidence summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}dl{font-size:12px}dt{color:var(--muted)}dd{margin-left:0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.limits{font-size:13px;padding-left:20px}.downloads{display:flex;gap:18px;font-size:13px;margin-top:18px}footer{margin-top:24px;font-size:12px;color:var(--muted)}[hidden]{display:none!important}\n@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}main{padding:28px}.two-col{grid-template-columns:1fr}}@media(max-width:720px){aside{position:static;width:auto;padding:20px}aside p{margin:3px 0}nav{display:flex;gap:18px;overflow:auto}nav a{white-space:nowrap;font-size:12px}main{margin:0;padding:20px 14px}header{display:block}.date{margin-top:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.clues{grid-template-columns:1fr}section{padding:17px}.controls{flex-direction:column}h1{font-size:27px}.topics{grid-template-columns:1fr}}\n@media print{aside,.controls{display:none}main{margin:0;padding:0}section,.clue{break-inside:avoid}.clues{display:block}.clue{margin-bottom:10px}body{background:#fff}}\n</style></head><body><aside><strong>本地消息 · 日报</strong><p>' + esc(label) + '</p><nav><a href="#overview">每日概览</a><a href="#followups">待跟进线索</a><a href="#conversations">会话分布</a><a href="#topics">主题与风险</a><a href="#content-gaps">待补充信息</a><a href="#evidence">查看原文</a><a href="#sources">统计范围</a></nav></aside><main>\n<header><div><div class="eyebrow">' + esc(label) + '</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">' + esc(report['date']) + '<div class="muted">北京时间</div></div></header>' + notices + '\n<div class="metrics" id="overview">' + metrics + '</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>\n<section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">' + bars + '</div></div></section>\n<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ' + str(report['lookback']['days']) + ' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="downloads"><a href="followups.txt" download>下载待跟进清单</a></div><div class="clues">' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>\n<section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '</tbody></table></div></section>\n<section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '</div><div><ul class="risk-list">' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '</ul></div></div></section>\n<section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ' + str(overview['messagesWithGaps']) + ' 条 · 回看材料共 ' + str(len(gaps)) + ' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">' + ''.join(gaps) + '</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '</section>\n<section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '</section>\n<section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>' + source_rows + '</tbody></table></div><ul class="limits">' + limitations + '</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ' + esc(report['createdAt'][:16].replace('T', ' ')) + ' · 本页含聊天原文，分享前请核对范围。</footer></main>\n<script>\nfunction bindFilters(searchId,filterId,selector,emptyId,countId,modeId){\n  const search=document.getElementById(searchId),filter=document.getElementById(filterId),cards=[...document.querySelectorAll(selector)];\n  const mode=modeId?document.getElementById(modeId):null;\n  function apply(){\n    const query=search.value.toLocaleLowerCase();let visible=0;\n    for(const card of cards){\n      const body=card.dataset.search??card.textContent;\n      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value===\'all\'||card.dataset.group===filter.value)&&(!mode||mode.value===\'all\'||card.dataset.mode===mode.value));\n      if(!card.hidden)visible++;\n    }\n    document.getElementById(emptyId).hidden=visible>0||cards.length===0;\n    if(countId)document.getElementById(countId).textContent=\'显示 \'+visible+\' / \'+cards.length+\' 条\';\n  }\n  search.addEventListener(\'input\',apply);filter.addEventListener(\'change\',apply);apply();\n  if(mode)mode.addEventListener(\'change\',apply);\n}\nbindFilters(\'clue-search\',\'clue-filter\',\'.clue\',\'clue-empty\',null,\'clue-mode\');\nbindFilters(\'gap-search\',\'gap-filter\',\'.gap-card\',\'gap-empty\',\'gap-count\');\nfunction reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName===\'DETAILS\')target.open=true;}\nwindow.addEventListener(\'hashchange\',reveal);\nfor(const link of document.querySelectorAll(\'a[href^="#"]\')){link.addEventListener(\'click\',event=>{const target=document.getElementById(link.getAttribute(\'href\').slice(1));if(target){event.preventDefault();if(target.tagName===\'DETAILS\')target.open=true;target.scrollIntoView({behavior:\'smooth\',block:\'start\'});}});}\nreveal();\n</script></body></html>'
+    return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">\n<title>' + esc(label + '每日消息整理 · ' + report['date']) + '</title><style>\n:root{--ink:#19343d;--muted:#657981;--line:#dbe5e6;--teal:#087c78;--paper:#fff;--bg:#f2f6f6}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Microsoft YaHei","Segoe UI",sans-serif}a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#153b44;color:#e5f1ef;padding:32px 22px}aside strong{display:block;font-size:19px;letter-spacing:1px}aside p{font-size:12px;color:#a8c5c8}nav a{display:block;color:#d2e6e4;padding:10px 0}main{margin-left:210px;padding:35px 42px 70px;max-width:1600px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:2px}h1{font-size:31px;margin:5px 0}h2{font-size:20px;margin:0 0 18px}h3{font-size:16px;margin:10px 0}.muted,small{color:var(--muted);font-size:12px}.date{font-size:18px;font-weight:600;white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.metric{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 16px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:27px;margin-top:6px}.notice{border-left:3px solid #d49a37;background:#fff8e9;padding:12px 16px;margin:20px 0 26px;font-size:13px}section{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:23px;scroll-margin-top:18px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:10px;margin-bottom:18px}input,select,button{font:inherit;font-size:13px;padding:9px 11px;border:1px solid #b9ccce;border-radius:6px;background:#fff;color:var(--ink)}input{min-width:0;flex:1}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}.clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.clue,.gap-card{border:1px solid var(--line);border-radius:10px;padding:17px;min-width:0}.clue-top,.clue-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.badge{font-size:11px;border-radius:4px;padding:3px 7px}.personal{background:#e4f3ef;color:#166855}.uncertain{background:#fff0d6;color:#91620c}.signal{background:#e8eef9;color:#465f91}.quote{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f8;border-radius:7px;padding:12px;font-size:13px}.clue-foot{color:var(--muted)}.evidence-link{font-size:12px;margin-left:8px}.chart{height:158px;display:flex;align-items:flex-end;gap:6px;min-width:530px}.chart-wrap,.table-wrap{overflow:auto}.hour{flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;min-width:15px}.hour i{display:block;width:80%;background:#409c96;border-radius:3px 3px 0 0}.hour span{font-size:10px;min-height:19px}.hour small{font-size:10px;margin-top:5px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.topic{background:#f4f8f8;padding:13px;border-radius:8px}.topic strong,.topic span{display:block}.topic span{color:var(--muted);font-size:12px}.risk-list{padding-left:20px}.risk-list p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:500}td small{display:block;overflow-wrap:anywhere}.path{max-width:380px;overflow-wrap:anywhere}.empty{color:var(--muted);background:#f5f8f8;padding:20px;border-radius:8px}.evidence{border-top:1px solid var(--line);padding:13px 0}.evidence:target{background:#fff8e5}.evidence summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}dl{font-size:12px}dt{color:var(--muted)}dd{margin-left:0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.limits{font-size:13px;padding-left:20px}.downloads{display:flex;align-items:center;flex-wrap:wrap;gap:18px;font-size:13px;margin-top:18px}footer{margin-top:24px;font-size:12px;color:var(--muted)}[hidden]{display:none!important}\n@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}main{padding:28px}.two-col{grid-template-columns:1fr}}@media(max-width:720px){aside{position:static;width:auto;padding:20px}aside p{margin:3px 0}nav{display:flex;gap:18px;overflow:auto}nav a{white-space:nowrap;font-size:12px}main{margin:0;padding:20px 14px}header{display:block}.date{margin-top:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.clues{grid-template-columns:1fr}section{padding:17px}.controls{flex-direction:column}h1{font-size:27px}.topics{grid-template-columns:1fr}}\n@media print{aside,.controls,.downloads{display:none}main{margin:0;padding:0}section,.clue{break-inside:avoid}.clues{display:block}.clue{margin-bottom:10px}body{background:#fff}}\n</style></head><body><aside><strong>本地消息 · 日报</strong><p>' + esc(label) + '</p><nav><a href="#overview">每日概览</a><a href="#followups">待跟进线索</a><a href="#conversations">会话分布</a><a href="#topics">主题与风险</a><a href="#content-gaps">待补充信息</a><a href="#evidence">查看原文</a><a href="#sources">统计范围</a></nav></aside><main>\n<header><div><div class="eyebrow">' + esc(label) + '</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">' + esc(report['date']) + '<div class="muted">北京时间</div></div></header>' + notices + '\n<div class="metrics" id="overview">' + metrics + '</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>\n<section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">' + bars + '</div></div></section>\n<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ' + str(report['lookback']['days']) + ' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="downloads"><button type="button" id="clue-download-filtered">下载当前筛选</button><a href="followups.txt" download>下载全部待跟进清单</a><span id="clue-count" class="muted" aria-live="polite"></span></div><p class="muted" id="clue-export-status" role="status">筛选清单仅包含匹配项，保留完整请求、回应与核对提示；下载后由你决定分享范围。</p><pre id="clue-export-header" data-date="' + esc(report['date']) + '" hidden>' + esc('\n'.join(_followup_header(report, True))) + '</pre><div class="clues">' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>\n<section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '</tbody></table></div></section>\n<section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '</div><div><ul class="risk-list">' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '</ul></div></div></section>\n<section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ' + str(overview['messagesWithGaps']) + ' 条 · 回看材料共 ' + str(len(gaps)) + ' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">' + ''.join(gaps) + '</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '</section>\n<section id="evidence"><h2>线索对应原文</h2><p class="muted">点击“查看依据”展开消息，核对发送人、时间和上下文。</p>' + (''.join(evidence) or '<p class="empty">当前没有引用的消息。</p>') + '</section>\n<section id="sources"><h2>本次统计范围</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>所选材料条数</th><th>导出日期范围</th></tr></thead><tbody>' + source_rows + '</tbody></table></div><ul class="limits">' + limitations + '</ul><details class="diagnostics"><summary>诊断日志与数据文件（排查时使用）</summary><div class="downloads"><a href="diagnostics.jsonl">诊断日志</a><a href="report.json">结构化日报</a><a href="evidence.jsonl">完整消息依据</a><a href="manifest.json">文件校验清单</a></div></details></section><footer>生成于 ' + esc(report['createdAt'][:16].replace('T', ' ')) + ' · 本页含聊天原文，分享前请核对范围。</footer></main>\n<script>\nfunction bindFilters(searchId,filterId,selector,emptyId,countId,modeId){\n  const search=document.getElementById(searchId),filter=document.getElementById(filterId),cards=[...document.querySelectorAll(selector)];\n  const mode=modeId?document.getElementById(modeId):null;\n  function apply(){\n    const query=search.value.trim().toLocaleLowerCase();let visible=0;\n    for(const card of cards){\n      const body=card.dataset.search??card.textContent;\n      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value===\'all\'||card.dataset.group===filter.value)&&(!mode||mode.value===\'all\'||card.dataset.mode===mode.value));\n      if(!card.hidden)visible++;\n    }\n    document.getElementById(emptyId).hidden=visible>0||cards.length===0;\n    if(countId)document.getElementById(countId).textContent=\'显示 \'+visible+\' / \'+cards.length+\' 条\';\n    if(mode)document.getElementById(\'clue-download-filtered\').disabled=visible===0;\n  }\n  search.addEventListener(\'input\',apply);filter.addEventListener(\'change\',apply);apply();\n  if(mode)mode.addEventListener(\'change\',apply);\n}\nbindFilters(\'clue-search\',\'clue-filter\',\'.clue\',\'clue-empty\',\'clue-count\',\'clue-mode\');\nbindFilters(\'gap-search\',\'gap-filter\',\'.gap-card\',\'gap-empty\',\'gap-count\');\ndocument.getElementById(\'clue-download-filtered\').addEventListener(\'click\',()=>{\n  const cards=[...document.querySelectorAll(\'.clue\')],items=cards.filter(card=>!card.hidden);\n  if(!items.length)return;\n  const header=document.getElementById(\'clue-export-header\'),query=document.getElementById(\'clue-search\').value.trim();\n  const filters=[\'clue-mode\',\'clue-filter\'].map(id=>document.getElementById(id).selectedOptions[0].textContent);\n  if(query)filters.push(\'关键词：\'+query);\n  const parts=[header.textContent,\'筛选范围：\'+filters.join(\' · \'),\'匹配 \'+items.length+\' / 全部 \'+cards.length+\' 条\'];\n  for(const [group,title] of [[\'personal\',\'本人相关待跟进\'],[\'uncertain\',\'对象或身份待确认\'],[\'signal\',\'处理 / 取消待核对\']]){\n    const selected=items.filter(card=>card.dataset.group===group);\n    parts.push(\'\\n\'+title+\'（\'+selected.length+\' 条）\');\n    selected.forEach((card,index)=>parts.push(\'\\n\'+(index+1)+\'. \'+card.dataset.search));\n  }\n  const url=URL.createObjectURL(new Blob([\'\\ufeff\'+parts.join(\'\\n\')+\'\\n\'],{type:\'text/plain;charset=utf-8\'}));\n  const link=document.createElement(\'a\');link.href=url;link.download=\'待跟进筛选-\'+header.dataset.date+\'.txt\';link.click();\n  setTimeout(()=>URL.revokeObjectURL(url),1000);\n  document.getElementById(\'clue-export-status\').textContent=\'已准备下载 \'+items.length+\' 条匹配线索；请在浏览器下载记录中查看，分享前核对范围。\';\n});\nfunction reveal(){const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName===\'DETAILS\')target.open=true;}\nwindow.addEventListener(\'hashchange\',reveal);\nfor(const link of document.querySelectorAll(\'a[href^="#"]\')){link.addEventListener(\'click\',event=>{const target=document.getElementById(link.getAttribute(\'href\').slice(1));if(target){event.preventDefault();if(target.tagName===\'DETAILS\')target.open=true;target.scrollIntoView({behavior:\'smooth\',block:\'start\'});}});}\nreveal();\n</script></body></html>'
 
 def run_daily_desktop(client, options, version):
     """Shared visual language for the native desktop surfaces.
@@ -1056,6 +1067,8 @@ around a flat surface and status chips are painted on a canvas.
             self.events, self.cancel_event = (queue.Queue(), threading.Event())
             self.busy, self.closing, self.closed = (False, False, False)
             self.result, self.followups, self.roots, self.controls = (None, [], [], [])
+            self.report, self.filtered_rows, self.page = (None, [], 0)
+            self.page_size = 500
             self.today = datetime.now(BEIJING).date()
             self.date = tk.StringVar(root, value=self.today.isoformat())
             self.lookback = tk.StringVar(root, value='7')
@@ -1276,8 +1289,18 @@ around a flat surface and status chips are painted on a canvas.
             self.open_selected_button.pack(side='right', padx=(8, 0))
             self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
             self.copy_selected_button.pack(side='right', padx=(8, 0))
+            scope_bar = tk.Frame(self.results, background=SURFACE)
+            scope_bar.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 5))
+            self.copy_filtered_button = self._button(scope_bar, '复制筛选清单', self.copy_filtered, state='disabled')
+            self.copy_filtered_button.pack(side='left')
+            self.save_filtered_button = self._button(scope_bar, '保存筛选清单', self.save_filtered, state='disabled')
+            self.save_filtered_button.pack(side='left', padx=8)
+            self.next_page_button = self._button(scope_bar, '下一页', lambda: self.change_page(1), state='disabled')
+            self.next_page_button.pack(side='right')
+            self.previous_page_button = self._button(scope_bar, '上一页', lambda: self.change_page(-1), state='disabled')
+            self.previous_page_button.pack(side='right', padx=8)
             detail_frame = tk.Frame(self.results, background=SURFACE)
-            detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
+            detail_frame.grid(row=6, column=0, sticky='ew', padx=14, pady=(0, 12))
             self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1, relief='solid', background=CANVAS, foreground=TEXT, state='disabled')
             self.detail.pack(side='left', fill='x', expand=True)
             detail_scroll = ttk.Scrollbar(detail_frame, orient='vertical', command=self.detail.yview)
@@ -1468,6 +1491,7 @@ around a flat surface and status chips are painted on a canvas.
 
         def present_result(self, result, report):
             self.result = result
+            self.report = report
             self.followups = report['followups'] if report else []
             overview = result['overview']
             for variable, key in zip(self.metrics, ('messages', 'activeConversations', 'personalFollowups', 'messagesWithGaps')):
@@ -1491,29 +1515,78 @@ around a flat surface and status chips are painted on a canvas.
         def filter_followups(self):
             query, choice = (self.search.get().strip().casefold(), self.filter.get())
             rows = []
-            self.followup_tree.delete(*self.followup_tree.get_children())
-            self.open_selected_button.configure(state='disabled')
-            self.copy_selected_button.configure(state='disabled')
             for index, row in enumerate(self.followups):
                 if self.mode_filter.get() == '仅私聊' and row.get('conversationMode') != 'direct':
                     continue
                 if self.mode_filter.get() == '仅群聊' and row.get('conversationMode') != 'group':
                     continue
-                personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
-                if choice == '本人相关待跟进' and (not personal):
-                    continue
-                if choice == '对象或身份待确认' and row['target'] != 'unknown':
-                    continue
-                if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
+                group = {'本人相关待跟进': 'personal', '对象或身份待确认': 'uncertain', '处理信号待核对': 'signal'}.get(choice)
+                if group and followup_group(row) != group:
                     continue
                 name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
                 if query and query not in followup_text(row).casefold():
                     continue
                 rows.append((index, row, name))
-            for index, row, name in rows[:500]:
+            self.filtered_rows, self.page = (rows, 0)
+            self.show_page()
+
+        def show_page(self):
+            self.followup_tree.delete(*self.followup_tree.get_children())
+            self.open_selected_button.configure(state='disabled')
+            self.copy_selected_button.configure(state='disabled')
+            total = len(self.filtered_rows)
+            pages = max(1, (total + self.page_size - 1) // self.page_size)
+            self.page = max(0, min(self.page, pages - 1))
+            start = self.page * self.page_size
+            for index, row, name in self.filtered_rows[start:start + self.page_size]:
                 self.followup_tree.insert('', 'end', iid=str(index), values=tuple((display_text(value) for value in (name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140]))))
-            self.result_count.set(f'匹配 {len(rows):,} 条 · ' + ('展示前 500 条，其余请在 HTML 日报中查看' if len(rows) > 500 else '选中线索查看完整请求'))
-            self._set_detail('当前筛选下没有线索。' if not rows else '选择一条线索查看完整请求；处理进展需结合 HTML 日报的原文依据核对。')
+            self.result_count.set(f'匹配 {total:,} 条 · 第 {self.page + 1} / {pages} 页' + (f' · {start + 1}–{min(start + self.page_size, total)}' if total else ''))
+            self.previous_page_button.configure(state='normal' if self.page > 0 else 'disabled')
+            self.next_page_button.configure(state='normal' if self.page + 1 < pages else 'disabled')
+            for button in (self.copy_filtered_button, self.save_filtered_button):
+                button.configure(state='normal' if total and self.report else 'disabled')
+            self._set_detail('当前筛选下没有线索。' if not total else '选择一条线索查看请求和回应；复制或保存筛选清单包含全部匹配项。')
+
+        def change_page(self, offset):
+            self.page += offset
+            self.show_page()
+
+        def filtered_text(self):
+            filters = [self.mode_filter.get(), self.filter.get()]
+            query = self.search.get().strip()
+            if query:
+                filters.append('关键词：' + query)
+            return render_followups_text(self.report, items=[row for _, row, _ in self.filtered_rows], filters=filters)
+
+        def copy_filtered(self):
+            if self.report and self.filtered_rows:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(self.filtered_text())
+                self.status.set(f'已复制当前筛选的 {len(self.filtered_rows):,} 条线索，包含所有分页；外发前请核对范围。')
+
+        def save_filtered(self):
+            if not self.report or not self.filtered_rows:
+                return
+            destination = filedialog.asksaveasfilename(parent=self.root, title='保存当前筛选清单', initialdir=str(Path(self.result['output']).parent), initialfile='待跟进筛选-' + self.report['date'] + '.txt', defaultextension='.txt', filetypes=[('文本清单', '*.txt')], confirmoverwrite=False)
+            if not destination:
+                return
+            created = False
+            try:
+                with Path(destination).open('x', encoding='utf-8-sig', newline='\n') as stream:
+                    created = True
+                    stream.write(self.filtered_text())
+            except FileExistsError:
+                self.status.set('未保存：已有文件已保留，请选择新的文件名。')
+            except OSError:
+                self._log('save_filtered_failed', traceback.format_exc())
+                if created:
+                    try:
+                        Path(destination).unlink()
+                    except OSError:
+                        self._log('save_filtered_cleanup_failed', traceback.format_exc())
+                self.status.set('未保存：请检查保存位置、权限及空间；当前筛选与已有结果保留。')
+            else:
+                self.status.set(f'已保存当前筛选的 {len(self.filtered_rows):,} 条线索；外发前请核对范围。')
 
         def _set_detail(self, text):
             self.detail.configure(state='normal')
@@ -1673,7 +1746,7 @@ def main(client, argv=None, *, standalone=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
+        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True, 'filteredChecklist': True, 'followupPagination': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or (not arguments):
         return run_daily_desktop(client, args, DAILY_REPORT_VERSION)

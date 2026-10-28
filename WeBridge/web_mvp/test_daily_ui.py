@@ -1,7 +1,10 @@
 """Native Tk interactions with synthetic exports and isolated desktop settings."""
 from datetime import date
+import hashlib
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -54,6 +57,23 @@ class DailyDesktopTests(unittest.TestCase):
             self.root.update()
             time.sleep(.01)
         self.assertTrue(condition(), 'Desktop did not reach its expected state')
+
+    def clipboard_digest_from_another_process(self):
+        # Tk 8.6's same-process selection path can split UTF-8 at chunk edges.
+        # A second interpreter exercises the actual cross-program clipboard.
+        code = ("import tkinter as tk,hashlib,json; root=tk.Tk(); root.withdraw(); text=root.clipboard_get(); "
+                "print(json.dumps({'sha256':hashlib.sha256(text.encode('utf-8')).hexdigest(),"
+                "'requests':text.count('请求：请确认报价，项目')})); root.destroy()")
+        with subprocess.Popen([sys.executable, '-X', 'utf8', '-c', code], stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, text=True, encoding='utf-8') as process:
+            try:
+                self.pump(lambda: process.poll() is not None)
+            finally:
+                if process.poll() is None:
+                    process.kill()
+            output, error = process.communicate()
+            self.assertEqual(process.returncode, 0, error)
+            return json.loads(output)
 
     def test_directory_picker_deduplicates_and_removes_only_selected_inputs(self):
         app = self.create_app()
@@ -237,6 +257,113 @@ class DailyDesktopTests(unittest.TestCase):
         app.clear_filters()
         self.assertEqual(len(app.followup_tree.get_children()), 6)
 
+    def test_pagination_reaches_all_matches_and_keeps_original_message_links(self):
+        app = self.create_app()
+        source = formal_export(self.base, 'pages', [message('request-' + str(index), f'请确认报价，项目 {index:04}') for index in range(1005)])
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'pages-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        self.assertEqual(len(app.followup_tree.get_children()), 500)
+        self.assertIn('第 1 / 3 页', app.result_count.get())
+        self.assertIn('disabled', app.previous_page_button.state())
+        app.next_page_button.invoke()
+        self.assertEqual(len(app.followup_tree.get_children()), 500)
+        self.assertIn('第 2 / 3 页', app.result_count.get())
+        selected = app.followup_tree.get_children()[0]
+        self.assertEqual(selected, '500')
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        app.open_selected()
+        self.assertTrue(self.opened[-1].endswith('#' + app.followups[500]['evidenceId']))
+        app.next_page_button.invoke()
+        self.assertEqual(len(app.followup_tree.get_children()), 5)
+        self.assertIn('第 3 / 3 页', app.result_count.get())
+        self.assertIn('disabled', app.next_page_button.state())
+        self.assertIn('disabled', app.copy_selected_button.state())
+        app.copy_filtered_button.invoke()
+        copied = app.filtered_text()
+        clipboard = self.clipboard_digest_from_another_process()
+        self.assertEqual(clipboard['requests'], 1005)
+        self.assertEqual(clipboard['sha256'], hashlib.sha256(copied.encode('utf-8')).hexdigest())
+        self.assertIn('匹配 1005 / 全部 1005 条', copied)
+        app.previous_page_button.invoke()
+        self.assertIn('第 2 / 3 页', app.result_count.get())
+        app.search.set('项目 1004')
+        self.assertEqual(len(app.followup_tree.get_children()), 1)
+        self.assertIn('第 1 / 1 页', app.result_count.get())
+        self.assertIn('disabled', app.next_page_button.state())
+        app.search.set('无匹配词')
+        for button in (app.previous_page_button, app.next_page_button, app.copy_filtered_button, app.save_filtered_button):
+            self.assertIn('disabled', button.state())
+        app.copy_filtered()
+        self.assertEqual(self.clipboard_digest_from_another_process(), clipboard)
+
+    def test_copy_and_save_filtered_results_exclude_hidden_clues_and_preserve_generated_files(self):
+        app = self.create_app()
+        roots = [followup_export(self.base, 'filtered-' + mode, mode=mode) for mode in ('direct', 'group')]
+        result = build_daily_report(roots, client='wechat', day=DAY, output=self.base / 'filtered-report')
+        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+        app.present_result(result, report)
+        originals = {path.name: path.read_bytes() for path in Path(result['output']).iterdir()}
+        app.mode_filter.set('仅群聊')
+        app.filter.set('本人相关待跟进')
+        app.search.set('  等待确认独有词  ')
+        app.copy_filtered_button.invoke()
+        text = self.root.clipboard_get()
+        for value in ('当前筛选清单', '匹配 1 / 全部 6 条', '仅群聊', '关键词：等待确认独有词',
+                      '请求尾部独有词', '稍后回复，等待确认独有词', '候选线索须人工核对'):
+            self.assertIn(value, text)
+        self.assertNotIn('私聊 ·', text)
+        self.assertNotIn('处理结果独有词', text)
+        self.assertNotIn('trace-request', text)
+        destination = self.base / '中文 筛选清单.txt'
+        with patch('offline_daily_ui.filedialog.asksaveasfilename', return_value=str(destination)):
+            app.save_filtered_button.invoke()
+        self.assertEqual(destination.read_text(encoding='utf-8-sig'), text)
+        self.assertEqual(originals, {path.name: path.read_bytes() for path in Path(result['output']).iterdir()})
+        with patch('offline_daily_ui.filedialog.asksaveasfilename', return_value=''):
+            app.save_filtered_button.invoke()
+        self.assertEqual(app.search.get().strip(), '等待确认独有词')
+
+    def test_saving_filtered_results_never_overwrites_existing_files_and_reports_write_failure(self):
+        app = self.create_app()
+        source = followup_export(self.base, 'save-failure')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'save-failure-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        destination = Path(result['followupsFile'])
+        original = destination.read_bytes()
+        with patch('offline_daily_ui.filedialog.asksaveasfilename', return_value=str(destination)):
+            app.save_filtered_button.invoke()
+        self.assertEqual(destination.read_bytes(), original)
+        self.assertIn('已有文件', app.status.get())
+        missing = self.base / 'missing-parent' / 'selection.txt'
+        with patch('offline_daily_ui.filedialog.asksaveasfilename', return_value=str(missing)):
+            app.save_filtered_button.invoke()
+        self.assertFalse(missing.exists())
+        self.assertIn('未保存', app.status.get())
+        self.assertEqual(len(app.followup_tree.get_children()), 3)
+        partial = self.base / 'partial-write.txt'
+        original_open = Path.open
+
+        class FailingWrite:
+            def __enter__(self):
+                self.stream = original_open(partial, 'x', encoding='utf-8-sig')
+                self.stream.write('incomplete synthetic data')
+                return self
+
+            def write(self, _text):
+                raise OSError('synthetic disk write failure')
+
+            def __exit__(self, *_args):
+                self.stream.close()
+
+        def open_with_failure(path, *args, **kwargs):
+            return FailingWrite() if path == partial and args[0] == 'x' else original_open(path, *args, **kwargs)
+
+        with patch('offline_daily_ui.filedialog.asksaveasfilename', return_value=str(partial)), patch.object(Path, 'open', open_with_failure):
+            app.save_filtered_button.invoke()
+        self.assertFalse(partial.exists())
+        self.assertEqual(destination.read_bytes(), original)
+
     def test_unresolved_sender_name_keeps_identifier_out_of_business_preview(self):
         app = self.create_app()
         source = formal_export(self.base, 'unresolved-name', [message('request', '请确认报价', senderName='synthetic-peer')])
@@ -305,8 +432,10 @@ class DailyDesktopTests(unittest.TestCase):
         self.assertGreater(app.source_list.xview()[0], 0)
         app.tabs.select(app.results)
         self.root.update()
-        for widget in (app.search_entry, app.filter_box, app.mode_box, app.copy_selected_button, app.followup_tree, app.detail):
+        for widget in (app.search_entry, app.filter_box, app.mode_box, app.copy_selected_button, app.followup_tree, app.detail,
+                       app.copy_filtered_button, app.save_filtered_button, app.previous_page_button, app.next_page_button):
             self.assertGreater(widget.winfo_height(), 20)
+            self.assertLessEqual(widget.winfo_rootx() + widget.winfo_width(), app.results.winfo_rootx() + app.results.winfo_width())
             self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(), app.results.winfo_rooty() + app.results.winfo_height())
         app.followup_tree.xview_moveto(1)
         self.assertGreater(app.followup_tree.xview()[0], 0)

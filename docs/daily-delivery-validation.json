@@ -46,7 +46,12 @@
     "selectedClueOpensMatchingHTMLEvidence": true,
     "partialCharacterMarkersAndSearch": true,
     "scopeWarningAndContentGapNavigation": true,
-    "replyPreviewConversationFilterAndSelectedCopy": true
+    "replyPreviewConversationFilterAndSelectedCopy": true,
+    "filteredListPagination": true,
+    "copyAndSaveAllMatchedPages": true,
+    "saveCancellationAndFailurePreserveFilters": true,
+    "existingFilesNotOverwritten": true,
+    "incompleteNewFileRemovedAfterWriteFailure": true
   },
   "targetedRefinements": {
     "numericQuoteIdentifiers": true,
@@ -164,10 +169,10 @@
     }
   },
   "schemaVersion": 1,
-  "version": "1.5.0",
+  "version": "1.6.0",
   "date": "2026-10-28",
   "ok": true,
-  "uniqueTestsPassed": 72,
+  "uniqueTestsPassed": 77,
   "unresolvedFailures": 0,
   "unresolvedErrors": 0,
   "skipped": 0,
@@ -175,8 +180,8 @@
     "dailyAndBusinessPresentation": 16,
     "targetedRefinements": 7,
     "historicalEncodingAtDailyBoundary": 2,
-    "businessScopeAndFollowupWorkflows": 6,
-    "nativeDesktopAndCancellation": 14,
+    "businessScopeAndFollowupWorkflows": 8,
+    "nativeDesktopAndCancellation": 17,
     "standaloneDistribution": 10,
     "accountSourceRegression": 9,
     "compiledWindowsDelivery": 8
@@ -195,11 +200,11 @@
         "test_runtime_identity",
         "test_windows_hook_smoke.SourceBindingTests"
       ],
-      "testsRun": 64,
+      "testsRun": 69,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 28.16,
+      "seconds": 26.95,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -218,7 +223,7 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 80.63,
+      "seconds": 73.43,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -235,7 +240,7 @@
   },
   "pythonSyntax": {
     "ok": true,
-    "files": 12
+    "files": 10
   },
   "standaloneSourceMatchesMaintenanceModules": true,
   "standaloneSourceMatchesPackagedScripts": true,
@@ -251,51 +256,51 @@
   "sourceScripts": [
     {
       "path": "standalone/wechat_daily_report.py",
-      "bytes": 129352,
-      "sha256": "5e740b3037e510b29f397aa65d357db2626dfde4f4690904fe41f21f89de3853"
+      "bytes": 135688,
+      "sha256": "8fb3a645e545b8463cdd8464545f85b4954220936565a4676cd9fac7db97d676"
     },
     {
       "path": "standalone/wecom_daily_report.py",
-      "bytes": 129350,
-      "sha256": "865f65c33afde26a6bfa721e3442f6c524ce09f5fbf339bc21d7e148c051bf01"
+      "bytes": 135686,
+      "sha256": "ffb9c1c04073b16b18496b1ef8188bce71b83118a8750cdb5faee63553ac4dc5"
     }
   ],
   "products": [
     {
       "client": "wechat",
       "delivery": "portable",
-      "directory": "WeChat-Daily-Report-1.5.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-1.5.0-Windows-x64.zip",
-      "version": "1.5.0",
-      "bytes": 26314360,
-      "sha256": "de4e4b7b4ffb0258f985e49da70a8da2fbeb9ac093a24476d0b91bbbdcb6797d"
+      "directory": "WeChat-Daily-Report-1.6.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-1.6.0-Windows-x64.zip",
+      "version": "1.6.0",
+      "bytes": 26328114,
+      "sha256": "05301acfdda76df2b23da7ad9b38cefbb157979928ad42a6bb265772ad9279d5"
     },
     {
       "client": "wechat",
       "delivery": "skill",
-      "directory": "WeChat-Daily-Report-Skill-1.5.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-Skill-1.5.0-Windows-x64.zip",
-      "version": "1.5.0",
-      "bytes": 26318198,
-      "sha256": "0615680149790bdf4be8453a2088813a73f0d29b97bf108d4ec74501c6ee712e"
+      "directory": "WeChat-Daily-Report-Skill-1.6.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-Skill-1.6.0-Windows-x64.zip",
+      "version": "1.6.0",
+      "bytes": 26332165,
+      "sha256": "318afd94cfb079824277cc82b85887534a51803333260d27b873d260924b2700"
     },
     {
       "client": "wecom",
       "delivery": "portable",
-      "directory": "WeCom-Daily-Report-1.5.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-1.5.0-Windows-x64.zip",
-      "version": "1.5.0",
-      "bytes": 26316417,
-      "sha256": "13018db269ecfb4a37060ddc308acf94be136875817be6d9820e1fbe3c7d5fb1"
+      "directory": "WeCom-Daily-Report-1.6.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-1.6.0-Windows-x64.zip",
+      "version": "1.6.0",
+      "bytes": 26328226,
+      "sha256": "c27fa8db3b365057668b958893fb217739490c7d59c69a3c4fa5d4fdcdb20b51"
     },
     {
       "client": "wecom",
       "delivery": "skill",
-      "directory": "WeCom-Daily-Report-Skill-1.5.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-Skill-1.5.0-Windows-x64.zip",
-      "version": "1.5.0",
-      "bytes": 26320256,
-      "sha256": "b5c0574bfcc79a8fcb64f09afc48bb2b09c254240bc07982111a109cda268f8e"
+      "directory": "WeCom-Daily-Report-Skill-1.6.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-Skill-1.6.0-Windows-x64.zip",
+      "version": "1.6.0",
+      "bytes": 26332276,
+      "sha256": "0f7db351f12ed3a2f38f792a074e2df934f1244136c1ef52a19dcb885ff13c9c"
     }
   ],
   "capabilities": {
@@ -303,7 +308,7 @@
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wechat",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "conversationModes": [
         "group",
         "direct"
@@ -319,13 +324,15 @@
       "followupChecklist": true,
       "replyPreview": true,
       "conversationModeFilter": true,
+      "filteredChecklist": true,
+      "followupPagination": true,
       "requiresPythonInstallation": false
     },
     "wecom": {
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wecom",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "conversationModes": [
         "group",
         "direct"
@@ -341,6 +348,8 @@
       "followupChecklist": true,
       "replyPreview": true,
       "conversationModeFilter": true,
+      "filteredChecklist": true,
+      "followupPagination": true,
       "requiresPythonInstallation": false
     }
   },
@@ -348,7 +357,7 @@
     "wechat": {
       "ok": true,
       "client": "wechat",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -365,7 +374,7 @@
     "wecom": {
       "ok": true,
       "client": "wecom",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -382,7 +391,7 @@
   },
   "markdownLocalLinks": {
     "ok": true,
-    "checked": 20,
+    "checked": 16,
     "broken": 0
   },
   "realAccountValidation": false,
@@ -401,24 +410,33 @@
     "businessChecklistOmitsAddedTraceIdentifiers": true,
     "checklistInOutputManifest": true,
     "singleFileAndCompiledBinaryChecks": true,
-    "newProductionDependencies": []
+    "newProductionDependencies": [],
+    "exclusiveBusinessGroups": true,
+    "filteredChecklistContainsOnlyMatches": true,
+    "filterConditionsAndMatchCountsIncluded": true,
+    "paginationCandidateCount": 1005,
+    "originalMessageLinksAcrossPages": true,
+    "crossProcessClipboardSha256Verified": true
   },
   "browserInteraction": {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "date": "2026-10-28",
     "ok": true,
     "browser": "Codex In-app Browser",
-    "client": "wecom",
+    "client": "wechat",
     "syntheticDataOnly": true,
     "checks": {
-      "longRequestTailSearch": true,
-      "groupStatusReplyCombinedFilter": true,
+      "initialAllMatches": true,
+      "groupStatusCombinedFilter": true,
+      "whitespaceTrimmedReplyKeyword": true,
+      "actualFilteredDownloadMatchesDesktopText": true,
+      "zeroMatchesDisableDownload": true,
+      "signalFilterRetainsReplyGapWarning": true,
       "privateConversationFilter": true,
-      "noMatchState": true,
-      "replyContentGapWarning": true,
-      "matchingReplyEvidenceExpanded": true,
-      "checklistLinkAndReadableText": true
+      "noConsoleErrors": true
     },
+    "filteredDownloadBytes": 1564,
+    "filteredDownloadSha256": "32a979328520aaf7b918fe9128a26eff97f34435a5ba5e777959a6eed19f5cfa",
     "nativeDesktopVisualValidation": false
   },
   "preRepairReproductions": [
@@ -426,38 +444,17 @@
       "schemaVersion": 1,
       "date": "2026-10-28",
       "targets": [
-        "test_daily_business.DailyBusinessTests.test_followup_previews_keep_the_matched_reply_and_its_content_gaps"
+        "test_daily_business.DailyBusinessTests.test_filtered_checklist_contains_only_matches_and_records_the_selected_scope",
+        "test_daily_business.DailyBusinessTests.test_signal_with_unknown_target_appears_once_in_the_checklist",
+        "test_daily_ui.DailyDesktopTests.test_pagination_reaches_all_matches_and_keeps_original_message_links",
+        "test_daily_ui.DailyDesktopTests.test_copy_and_save_filtered_results_exclude_hidden_clues_and_preserve_generated_files",
+        "test_daily_ui.DailyDesktopTests.test_saving_filtered_results_never_overwrites_existing_files_and_reports_write_failure"
       ],
-      "testsRun": 1,
-      "failures": 0,
-      "errors": 4,
-      "skipped": 0,
-      "seconds": 0.2,
-      "ok": false,
-      "usesSyntheticData": true,
-      "realAccountValidation": false,
-      "compiledBinaryValidation": false,
-      "python": "3.14.6",
-      "platform": "win32",
-      "failedTests": [
-        "test_daily_business.DailyBusinessTests.test_followup_previews_keep_the_matched_reply_and_its_content_gaps (client='wechat', mode='direct')",
-        "test_daily_business.DailyBusinessTests.test_followup_previews_keep_the_matched_reply_and_its_content_gaps (client='wechat', mode='group')",
-        "test_daily_business.DailyBusinessTests.test_followup_previews_keep_the_matched_reply_and_its_content_gaps (client='wecom', mode='direct')",
-        "test_daily_business.DailyBusinessTests.test_followup_previews_keep_the_matched_reply_and_its_content_gaps (client='wecom', mode='group')"
-      ]
-    },
-    {
-      "schemaVersion": 1,
-      "date": "2026-10-28",
-      "targets": [
-        "test_daily_business.DailyBusinessTests.test_business_checklist_contains_full_requests_replies_and_warnings_without_trace_ids",
-        "test_daily_business.DailyBusinessTests.test_checklist_is_not_limited_to_the_desktops_first_500_matches"
-      ],
-      "testsRun": 2,
-      "failures": 0,
+      "testsRun": 5,
+      "failures": 2,
       "errors": 3,
       "skipped": 0,
-      "seconds": 0.16,
+      "seconds": 1.91,
       "ok": false,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -465,33 +462,26 @@
       "python": "3.14.6",
       "platform": "win32",
       "failedTests": [
-        "test_daily_business.DailyBusinessTests.test_business_checklist_contains_full_requests_replies_and_warnings_without_trace_ids (client='wechat')",
-        "test_daily_business.DailyBusinessTests.test_business_checklist_contains_full_requests_replies_and_warnings_without_trace_ids (client='wecom')",
-        "test_daily_business.DailyBusinessTests.test_checklist_is_not_limited_to_the_desktops_first_500_matches"
-      ]
-    },
-    {
-      "schemaVersion": 1,
-      "date": "2026-10-28",
-      "targets": [
-        "test_daily_business.DailyBusinessTests.test_html_clues_search_complete_requests_and_matched_replies_by_conversation_mode",
-        "test_daily_ui.DailyDesktopTests.test_conversation_filter_reply_search_and_selected_business_copy"
-      ],
-      "testsRun": 2,
-      "failures": 0,
-      "errors": 2,
-      "skipped": 0,
-      "seconds": 0.74,
-      "ok": false,
-      "usesSyntheticData": true,
-      "realAccountValidation": false,
-      "compiledBinaryValidation": false,
-      "python": "3.14.6",
-      "platform": "win32",
-      "failedTests": [
-        "test_daily_business.DailyBusinessTests.test_html_clues_search_complete_requests_and_matched_replies_by_conversation_mode",
-        "test_daily_ui.DailyDesktopTests.test_conversation_filter_reply_search_and_selected_business_copy"
+        "test_daily_business.DailyBusinessTests.test_signal_with_unknown_target_appears_once_in_the_checklist",
+        "test_daily_ui.DailyDesktopTests.test_pagination_reaches_all_matches_and_keeps_original_message_links",
+        "test_daily_business.DailyBusinessTests.test_filtered_checklist_contains_only_matches_and_records_the_selected_scope",
+        "test_daily_ui.DailyDesktopTests.test_copy_and_save_filtered_results_exclude_hidden_clues_and_preserve_generated_files",
+        "test_daily_ui.DailyDesktopTests.test_saving_filtered_results_never_overwrites_existing_files_and_reports_write_failure"
       ]
     }
-  ]
+  ],
+  "filteredChecklist": {
+    "desktopScope": "All matching rows, including every page",
+    "pageSize": 500,
+    "syntheticCandidateCount": 1005,
+    "zeroMatchesPreserveClipboard": true,
+    "saveCancellationPreservesFilters": true,
+    "existingFilesPreserved": true,
+    "partialNewFileRemovedAfterInjectedWriteFailure": true,
+    "noAutomaticTransmission": true,
+    "persistentReportSchemaChanged": false,
+    "crossProgramClipboardVerified": true,
+    "clipboardSameProcessReadbackUsedForLargeText": false,
+    "clipboardReadbackNote": "Large-text same-process Tk retrieval was inconsistent in the synthetic fixture; a separate Tk process matched the complete source SHA-256."
+  }
 }

@@ -13,7 +13,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from offline_calendar import DatePicker
 from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report, display_text
-from offline_daily_html import _business_name, followup_text
+from offline_daily_html import _business_name, followup_group, followup_text, render_followups_text
 from offline_theme import (ACCENT, BODY, BORDER, CANVAS, CAPTION, DISPLAY, SURFACE,
                            TEXT, TEXT_MUTED, apply_theme, card)
 
@@ -30,6 +30,8 @@ class DailyReportApp:
         self.events, self.cancel_event = queue.Queue(), threading.Event()
         self.busy, self.closing, self.closed = False, False, False
         self.result, self.followups, self.roots, self.controls = None, [], [], []
+        self.report, self.filtered_rows, self.page = None, [], 0
+        self.page_size = 500
         self.today = datetime.now(BEIJING).date()
         self.date = tk.StringVar(root, value=self.today.isoformat())
         self.lookback = tk.StringVar(root, value='7')
@@ -259,8 +261,18 @@ class DailyReportApp:
         self.open_selected_button.pack(side='right', padx=(8, 0))
         self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
         self.copy_selected_button.pack(side='right', padx=(8, 0))
+        scope_bar = tk.Frame(self.results, background=SURFACE)
+        scope_bar.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 5))
+        self.copy_filtered_button = self._button(scope_bar, '复制筛选清单', self.copy_filtered, state='disabled')
+        self.copy_filtered_button.pack(side='left')
+        self.save_filtered_button = self._button(scope_bar, '保存筛选清单', self.save_filtered, state='disabled')
+        self.save_filtered_button.pack(side='left', padx=8)
+        self.next_page_button = self._button(scope_bar, '下一页', lambda: self.change_page(1), state='disabled')
+        self.next_page_button.pack(side='right')
+        self.previous_page_button = self._button(scope_bar, '上一页', lambda: self.change_page(-1), state='disabled')
+        self.previous_page_button.pack(side='right', padx=8)
         detail_frame = tk.Frame(self.results, background=SURFACE)
-        detail_frame.grid(row=5, column=0, sticky='ew', padx=14, pady=(0, 12))
+        detail_frame.grid(row=6, column=0, sticky='ew', padx=14, pady=(0, 12))
         self.detail = tk.Text(detail_frame, height=4, wrap='word', font=BODY, borderwidth=1,
                               relief='solid', background=CANVAS, foreground=TEXT, state='disabled')
         self.detail.pack(side='left', fill='x', expand=True)
@@ -456,6 +468,7 @@ class DailyReportApp:
 
     def present_result(self, result, report):
         self.result = result
+        self.report = report
         self.followups = report['followups'] if report else []
         overview = result['overview']
         for variable, key in zip(self.metrics, ('messages', 'activeConversations', 'personalFollowups', 'messagesWithGaps')):
@@ -481,30 +494,81 @@ class DailyReportApp:
     def filter_followups(self):
         query, choice = self.search.get().strip().casefold(), self.filter.get()
         rows = []
-        self.followup_tree.delete(*self.followup_tree.get_children())
-        self.open_selected_button.configure(state='disabled')
-        self.copy_selected_button.configure(state='disabled')
         for index, row in enumerate(self.followups):
             if self.mode_filter.get() == '仅私聊' and row.get('conversationMode') != 'direct':
                 continue
             if self.mode_filter.get() == '仅群聊' and row.get('conversationMode') != 'group':
                 continue
-            personal = row['target'] == 'self' and row['state'] not in {'completion_signal', 'withdrawal_signal'}
-            if choice == '本人相关待跟进' and not personal:
-                continue
-            if choice == '对象或身份待确认' and row['target'] != 'unknown':
-                continue
-            if choice == '处理信号待核对' and row['state'] not in {'completion_signal', 'withdrawal_signal'}:
+            group = {'本人相关待跟进': 'personal', '对象或身份待确认': 'uncertain', '处理信号待核对': 'signal'}.get(choice)
+            if group and followup_group(row) != group:
                 continue
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
             if query and query not in followup_text(row).casefold():
                 continue
             rows.append((index, row, name))
-        for index, row, name in rows[:500]:
+        self.filtered_rows, self.page = rows, 0
+        self.show_page()
+
+    def show_page(self):
+        self.followup_tree.delete(*self.followup_tree.get_children())
+        self.open_selected_button.configure(state='disabled')
+        self.copy_selected_button.configure(state='disabled')
+        total = len(self.filtered_rows)
+        pages = max(1, (total + self.page_size - 1) // self.page_size)
+        self.page = max(0, min(self.page, pages - 1))
+        start = self.page * self.page_size
+        for index, row, name in self.filtered_rows[start:start + self.page_size]:
             self.followup_tree.insert('', 'end', iid=str(index), values=tuple(display_text(value) for value in
                 (name, row['senderName'], row['time'][:16].replace('T', ' '), row['stateLabel'], row['text'].replace('\n', ' ')[:140])))
-        self.result_count.set(f'匹配 {len(rows):,} 条 · ' + ('展示前 500 条，其余请在 HTML 日报中查看' if len(rows) > 500 else '选中线索查看完整请求'))
-        self._set_detail('当前筛选下没有线索。' if not rows else '选择一条线索查看完整请求；处理进展需结合 HTML 日报的原文依据核对。')
+        self.result_count.set(f'匹配 {total:,} 条 · 第 {self.page + 1} / {pages} 页' + (f' · {start + 1}–{min(start + self.page_size, total)}' if total else ''))
+        self.previous_page_button.configure(state='normal' if self.page > 0 else 'disabled')
+        self.next_page_button.configure(state='normal' if self.page + 1 < pages else 'disabled')
+        for button in (self.copy_filtered_button, self.save_filtered_button):
+            button.configure(state='normal' if total and self.report else 'disabled')
+        self._set_detail('当前筛选下没有线索。' if not total else '选择一条线索查看请求和回应；复制或保存筛选清单包含全部匹配项。')
+
+    def change_page(self, offset):
+        self.page += offset
+        self.show_page()
+
+    def filtered_text(self):
+        filters = [self.mode_filter.get(), self.filter.get()]
+        query = self.search.get().strip()
+        if query:
+            filters.append('关键词：' + query)
+        return render_followups_text(self.report, items=[row for _, row, _ in self.filtered_rows], filters=filters)
+
+    def copy_filtered(self):
+        if self.report and self.filtered_rows:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.filtered_text())
+            self.status.set(f'已复制当前筛选的 {len(self.filtered_rows):,} 条线索，包含所有分页；外发前请核对范围。')
+
+    def save_filtered(self):
+        if not self.report or not self.filtered_rows:
+            return
+        destination = filedialog.asksaveasfilename(parent=self.root, title='保存当前筛选清单',
+            initialdir=str(Path(self.result['output']).parent), initialfile='待跟进筛选-' + self.report['date'] + '.txt',
+            defaultextension='.txt', filetypes=[('文本清单', '*.txt')], confirmoverwrite=False)
+        if not destination:
+            return
+        created = False
+        try:
+            with Path(destination).open('x', encoding='utf-8-sig', newline='\n') as stream:
+                created = True
+                stream.write(self.filtered_text())
+        except FileExistsError:
+            self.status.set('未保存：已有文件已保留，请选择新的文件名。')
+        except OSError:
+            self._log('save_filtered_failed', traceback.format_exc())
+            if created:
+                try:
+                    Path(destination).unlink()
+                except OSError:
+                    self._log('save_filtered_cleanup_failed', traceback.format_exc())
+            self.status.set('未保存：请检查保存位置、权限及空间；当前筛选与已有结果保留。')
+        else:
+            self.status.set(f'已保存当前筛选的 {len(self.filtered_rows):,} 条线索；外发前请核对范围。')
 
     def _set_detail(self, text):
         self.detail.configure(state='normal')

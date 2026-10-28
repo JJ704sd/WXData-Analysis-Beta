@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 from offline_daily import build_daily_report
+from offline_daily_html import render_followups_text
 from test_daily_reports import DAY, formal_export, message
 
 
@@ -110,6 +111,36 @@ class DailyBusinessTests(unittest.TestCase):
         self.assertEqual(text.count('请求：请确认报价，项目'), 505)
         self.assertIn('项目 504', text)
 
+    def test_filtered_checklist_contains_only_matches_and_records_the_selected_scope(self):
+        source = followup_export(self.base, 'filtered', mode='group')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'filtered-report')
+        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+        before = json.dumps(report, ensure_ascii=True)
+        selected = [item for item in report['followups'] if item['state'] == 'deferred']
+        text = render_followups_text(report, items=selected, filters=['仅群聊', '本人相关待跟进', '关键词：等待确认独有词'])
+        for value in ('当前筛选清单', '匹配 1 / 全部 3 条', '仅群聊', '关键词：等待确认独有词',
+                      '请求尾部独有词', '稍后回复，等待确认独有词', '候选线索须人工核对'):
+            self.assertIn(value, text)
+        self.assertNotIn('处理结果独有词', text)
+        self.assertNotIn('trace-request', text)
+        self.assertEqual(before, json.dumps(report, ensure_ascii=True))
+        empty = render_followups_text(report, items=[], filters=['关键词：没有匹配'])
+        self.assertIn('匹配 0 / 全部 3 条', empty)
+        self.assertIn('当前筛选下没有线索', empty)
+        self.assertNotIn('请求：', empty)
+
+    def test_signal_with_unknown_target_appears_once_in_the_checklist(self):
+        source = followup_export(self.base, 'unknown-signal', mode='group')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'unknown-signal-report')
+        report = json.loads(Path(result['jsonFile']).read_text(encoding='utf-8'))
+        item = next(item for item in report['followups'] if item['state'] == 'completion_signal')
+        item['target'] = 'unknown'
+        report['followups'] = [item]
+        text = render_followups_text(report)
+        self.assertEqual(text.count('请求：请确认方案'), 1)
+        self.assertIn('对象或身份待确认（0 条）', text)
+        self.assertIn('处理 / 取消待核对（1 条）', text)
+
     def test_html_clues_search_complete_requests_and_matched_replies_by_conversation_mode(self):
         source = followup_export(self.base, 'business-html', mode='group')
         result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'business-html-report')
@@ -122,6 +153,8 @@ class DailyBusinessTests(unittest.TestCase):
         self.assertEqual(html.count('class="reply-preview"'), 2)
         self.assertIn('href="followups.txt"', html)
         self.assertIn('id="clue-mode"', html)
+        self.assertIn('id="clue-download-filtered"', html)
+        self.assertIn('id="clue-count"', html)
 
     def test_empty_selected_day_warns_without_discarding_earlier_followups(self):
         for client in ('wechat', 'wecom'):
