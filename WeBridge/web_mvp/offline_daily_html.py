@@ -5,6 +5,11 @@ from offline_daily import display_text
 from offline_images import message_nodes
 
 
+FOLLOWUP_FILTERS = (('all', '全部线索'), ('personal', '本人相关待跟进'),
+                    ('unanswered', '尚未回应'), ('responded', '已有回应待核对'), ('deferred', '暂缓仍待跟进'),
+                    ('uncertain', '对象或身份待确认'), ('signal', '处理信号待核对'))
+
+
 def _business_name(value, identifier, fallback):
     return display_text(value) if value and str(value) != str(identifier) else fallback
 
@@ -51,6 +56,12 @@ def followup_group(item):
     if item['state'] in {'completion_signal', 'withdrawal_signal'}:
         return 'signal'
     return 'personal' if item['target'] == 'self' else 'uncertain'
+
+
+def followup_progress(item):
+    if item['state'] in {'responded', 'deferred'}:
+        return item['state']
+    return 'signal' if followup_group(item) == 'signal' else 'unanswered'
 
 
 def _followup_header(report, filtered=False):
@@ -138,6 +149,7 @@ def render_report(report, records):
                        + '</div>')
         mode = '私聊' if item.get('conversationMode') == 'direct' else '群聊'
         cards.append('<article class="clue" data-group="' + group + '" data-mode="' + esc(item.get('conversationMode', ''))
+                     + '" data-progress="' + followup_progress(item)
                      + '" data-search="' + esc(followup_text(item)) + '"><div class="clue-top"><span class="badge ' + group + '">'
                      + esc(item['stateLabel']) + '</span><span class="muted">' + esc(item['time'][5:16].replace('T', ' '))
                      + '</span></div><h3>' + esc(mode + ' · ' + _business_name(item['chatName'], item['chatId'], '会话名称待补充')) + '</h3><p class="quote">' + esc(snippet)
@@ -205,6 +217,7 @@ def render_report(report, records):
     metrics = ''.join('<div class="metric"><span>' + name + '</span><strong>' + esc(value) + '</strong></div>' for name, value in kpis)
     notices = ('<div class="notice" role="status"><strong>材料范围提醒</strong><ul>'
                + ''.join('<li>' + esc(note) + '</li>' for note in report.get('notices', [])) + '</ul></div>') if report.get('notices') else ''
+    filter_options = ''.join('<option value="' + key + '">' + esc(label) + '</option>' for key, label in FOLLOWUP_FILTERS)
     return '''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -216,7 +229,7 @@ def render_report(report, records):
 <header><div><div class="eyebrow">''' + esc(label) + '''</div><h1>每日消息概览</h1><div class="muted">先看重点，再按需查看原文</div></div><div class="date">''' + esc(report['date']) + '''<div class="muted">北京时间</div></div></header>''' + notices + '''
 <div class="metrics" id="overview">''' + metrics + '''</div><div class="notice">仅统计所选材料。待跟进与处理进展请结合原文核对。</div>
 <section><h2>24 小时消息分布</h2><div class="chart-wrap"><div class="chart">''' + bars + '''</div></div></section>
-<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ''' + str(report['lookback']['days']) + ''' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围"><option value="all">全部线索</option><option value="personal">本人相关待跟进</option><option value="uncertain">对象或身份待确认</option><option value="signal">处理 / 取消信号</option></select></div><div class="downloads"><button type="button" id="clue-download-filtered">下载当前筛选</button><a href="followups.txt" download>下载全部待跟进清单</a><span id="clue-count" class="muted" aria-live="polite"></span></div><p class="muted" id="clue-export-status" role="status">筛选清单仅包含匹配项，保留完整请求、回应与核对提示；下载后由你决定分享范围。</p><pre id="clue-export-header" data-date="''' + esc(report['date']) + '''" hidden>''' + esc('\n'.join(_followup_header(report, True))) + '''</pre><div class="clues">''' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '''</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>
+<section id="followups"><div class="section-top"><h2>待跟进线索</h2><span class="muted">回看 ''' + str(report['lookback']['days']) + ''' 天（含当天），保留每条独立请求</span></div><div class="controls"><input id="clue-search" aria-label="搜索待跟进线索" placeholder="搜索完整请求、回应或会话"><select id="clue-mode" aria-label="筛选会话类型"><option value="all">全部会话</option><option value="direct">仅私聊</option><option value="group">仅群聊</option></select><select id="clue-filter" aria-label="筛选线索范围">''' + filter_options + '''</select></div><div class="downloads"><button type="button" id="clue-download-filtered">下载当前筛选</button><a href="followups.txt" download>下载全部待跟进清单</a><span id="clue-count" class="muted" aria-live="polite"></span></div><p class="muted" id="clue-export-status" role="status">筛选清单仅包含匹配项，保留完整请求、回应与核对提示；下载后由你决定分享范围。</p><pre id="clue-export-header" data-date="''' + esc(report['date']) + '''" hidden>''' + esc('\n'.join(_followup_header(report, True))) + '''</pre><div class="clues">''' + (''.join(cards) or '<p class="empty">当前材料未命中待跟进规则；不代表没有待办。</p>') + '''</div><p class="empty" id="clue-empty" hidden>没有匹配的线索。</p></section>
 <section id="conversations"><h2>当日活跃会话</h2><div class="table-wrap"><table><thead><tr><th>会话</th><th>类型</th><th>消息</th><th>已知发言人</th><th>本人发出</th></tr></thead><tbody>''' + (conversation_rows or '<tr><td colspan="5">当天没有可确认时间的消息。</td></tr>') + '''</tbody></table></div></section>
 <section id="topics"><h2>重点主题与需关注事项</h2><p class="muted">按消息字样整理，每个主题可先查看 5 条相关原文；是否需要处理请结合上下文判断。</p><div class="two-col"><div class="topics">''' + (''.join(topics) or '<p class="empty">暂未发现相关主题。</p>') + '''</div><div><ul class="risk-list">''' + (''.join(risks) or '<li class="muted">暂未发现需提示的关键词。</li>') + '''</ul></div></div></section>
 <section id="content-gaps"><h2>待补充信息</h2><p class="muted">当天 ''' + str(overview['messagesWithGaps']) + ''' 条 · 回看材料共 ''' + str(len(gaps)) + ''' 条（含时间待确认）。计数按消息去重；可搜索附件、引用及转发中已读取的正文，不代表原文已完整。</p><div class="controls"><input id="gap-search" aria-label="搜索待补充信息" placeholder="搜索会话、正文或附件内容"><select id="gap-filter" aria-label="筛选待补充信息"><option value="all">全部日期</option><option value="daily">当天</option><option value="lookback">之前日期</option><option value="undated">时间待确认</option></select></div><p class="muted" id="gap-count" aria-live="polite"></p><div class="clues">''' + ''.join(gaps) + '''</div><p class="empty" id="gap-empty" hidden>没有符合当前筛选的待补充信息。</p>''' + ('' if gaps else '<p class="empty">当前未记录内容缺口；仅反映所选材料，不表示账号消息或附件已完整。</p>') + '''</section>
@@ -230,7 +243,7 @@ function bindFilters(searchId,filterId,selector,emptyId,countId,modeId){
     const query=search.value.trim().toLocaleLowerCase();let visible=0;
     for(const card of cards){
       const body=card.dataset.search??card.textContent;
-      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value==='all'||card.dataset.group===filter.value)&&(!mode||mode.value==='all'||card.dataset.mode===mode.value));
+      card.hidden=!(body.toLocaleLowerCase().includes(query)&&(filter.value==='all'||card.dataset.group===filter.value||card.dataset.progress===filter.value)&&(!mode||mode.value==='all'||card.dataset.mode===mode.value));
       if(!card.hidden)visible++;
     }
     document.getElementById(emptyId).hidden=visible>0||cards.length===0;

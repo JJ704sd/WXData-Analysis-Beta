@@ -257,6 +257,33 @@ class DailyDesktopTests(unittest.TestCase):
         app.clear_filters()
         self.assertEqual(len(app.followup_tree.get_children()), 6)
 
+    def test_progress_filters_and_saved_scope_keep_corrected_conversation_states(self):
+        from test_daily_conversations import conversation_export
+        app = self.create_app(client='wecom')
+        roots = [conversation_export(self.base, 'progress-' + mode, client='wecom', mode=mode) for mode in ('direct', 'group')]
+        result = build_daily_report(roots, client='wecom', day=DAY, output=self.base / 'progress-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        for label, expected in (('尚未回应', 4), ('已有回应待核对', 2), ('暂缓仍待跟进', 2)):
+            with self.subTest(filter=label):
+                self.assertIn(label, app.filter_box['values'])
+                app.filter.set(label)
+                self.assertEqual(len(app.followup_tree.get_children()), expected)
+                self.assertIn(label, app.filtered_text())
+        app.mode_filter.set('仅群聊')
+        self.assertEqual(len(app.followup_tree.get_children()), 1)
+        app.copy_filtered_button.invoke()
+        copied = self.root.clipboard_get()
+        self.assertIn('明天再回复', copied)
+        self.assertNotIn('取消该请求，不用了', copied)
+        app.filter.set('处理信号待核对')
+        self.assertEqual(len(app.followup_tree.get_children()), 1)
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        self.assertIn('取消该请求，不用了', app.detail.get('1.0', 'end'))
+        app.open_selected()
+        self.assertTrue(self.opened[-1].endswith('#' + app.followups[int(selected)]['evidenceId']))
+
     def test_pagination_reaches_all_matches_and_keeps_original_message_links(self):
         app = self.create_app()
         source = formal_export(self.base, 'pages', [message('request-' + str(index), f'请确认报价，项目 {index:04}') for index in range(1005)])

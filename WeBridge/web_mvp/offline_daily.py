@@ -1,6 +1,5 @@
 """Daily summaries from explicitly selected, human-reviewed local exports."""
 from collections import Counter, defaultdict
-from bisect import bisect_right
 from datetime import date, datetime, timedelta
 import hashlib
 import json
@@ -35,6 +34,7 @@ def _progress(callback, phase, **details):
 
 
 REQUEST = re.compile(r'请(?:您|你|大家|各位)?(?:尽快|及时|务必|协助|帮忙|先)?(?:问|帮|确认|回复|提供|处理|安排|发|查|看|跟进)|麻烦|能否|是否|可以吗|什么时候|多少钱|进展(?:如何|怎么样)|跟进(?:一下|下)|[?？]', re.I)
+CANCEL_REQUEST = re.compile(r'(?:请|麻烦|能否|帮我).{0,8}取消|取消.{0,16}(?:吗|[?？])')
 DEFER = re.compile(r'稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)')
 COMPLETION = re.compile(r'已(?:经)?(?:处理|完成|发送|发出|解决|确认|回复)|问题.{0,4}解决')
 NEGATION = re.compile(r'没有|未(?:能|完成|处理|解决|确认)|还没|尚未|暂未|不能|无法|别|不要')
@@ -323,30 +323,50 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                 _checkpoint(cancel)
             body = _primary(row)
             withdrawn = bool(WITHDRAWAL.search(body))
-            if row['direction'] != 'outgoing' and REQUEST.search(body) and not withdrawn:
+            cancel_request = bool(CANCEL_REQUEST.search(body))
+            is_request = row['direction'] != 'outgoing' and (REQUEST.search(body) or cancel_request) and (not withdrawn or cancel_request)
+            if is_request:
                 requests.append(row)
-            if body and (row['direction'] == 'outgoing' or withdrawn):
+            if body and not is_request and (row['direction'] == 'outgoing' or withdrawn):
                 responses.append((row, body))
             processed += 1
             if processed % 500 == 0 or processed == total:
                 _progress(progress, 'organizing', processedMessages=processed, totalMessages=total)
                 _checkpoint(cancel)
-        request_times = [row['time'] for row in requests]
-        # Index each explicit reply once. Unquoted private replies remain
-        # eligible only while exactly one earlier request exists.
+        by_message = {row['messageId']: row for row in requests}
+        targets = {row['messageId']: _target(row, my_names) for row in requests}
+        # Keep requests awaiting their first linked response separate from
+        # business completion. A response does not confirm a business outcome.
+        pending, cursor, last_request, last_linked = {}, 0, None, None
         candidates = defaultdict(list)
         for index, (later, body) in enumerate(responses):
             if index % 128 == 0:
                 _checkpoint(cancel)
+            while cursor < len(requests) and requests[cursor]['time'] <= later['time']:
+                last_request = requests[cursor]
+                pending[last_request['messageId']] = last_request
+                cursor += 1
             identifiers = _quote_ids(later)
+            linked, explicit = None, len(identifiers) == 1
             if len(identifiers) == 1:
-                candidates[next(iter(identifiers))].append((later, body, True))
-            elif (requests and later['conversationMode'] == 'direct' and not later['content'].get('quote')
-                  and later['time'] > requests[0]['time'] and bisect_right(request_times, later['time']) == 1):
-                candidates[requests[0]['messageId']].append((later, body, False))
+                linked = by_message.get(next(iter(identifiers)))
+            elif later['conversationMode'] == 'direct' and not later['content'].get('quote'):
+                if len(pending) == 1:
+                    linked = next(iter(pending.values()))
+                elif not pending and last_request and last_linked == last_request['messageId']:
+                    linked = last_request
+            if not linked or later['time'] < linked['time'] or (later['time'] == linked['time'] and not explicit):
+                continue
+            if targets[linked['messageId']][0] != 'self':
+                continue
+            if later['direction'] != 'outgoing' and later['senderId'] != linked['senderId']:
+                continue
+            candidates[linked['messageId']].append((later, body, explicit))
+            pending.pop(linked['messageId'], None)
+            last_linked = linked['messageId']
         for request in requests:
             _checkpoint(cancel)
-            target, basis = _target(request, my_names)
+            target, basis = targets[request['messageId']]
             if target == 'other':
                 continue
             state = 'needs_response' if target == 'self' else 'identity_unknown' if basis == 'identity_unknown' else 'target_uncertain'
@@ -359,9 +379,12 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                 if target != 'self':
                     continue
                 if later['direction'] == 'outgoing':
+                    next_state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and not NEGATION.search(body) else 'responded'
+                    if state == 'withdrawal_signal' or (state == 'completion_signal' and next_state == 'responded' and not NEGATION.search(body)):
+                        continue
                     reply = later
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
-                    state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and not NEGATION.search(body) else 'responded'
+                    state = next_state
                 elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(body):
                     reply, state = later, 'withdrawal_signal'
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'

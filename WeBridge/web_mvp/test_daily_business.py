@@ -156,6 +156,16 @@ class DailyBusinessTests(unittest.TestCase):
         self.assertIn('id="clue-download-filtered"', html)
         self.assertIn('id="clue-count"', html)
 
+    def test_html_progress_filters_distinguish_unanswered_replied_and_deferred_clues(self):
+        from test_daily_conversations import conversation_export
+        source = conversation_export(self.base, 'progress')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'progress-report')
+        html = Path(result['htmlFile']).read_text(encoding='utf-8')
+        cards = GapCards(html).clues
+        self.assertEqual(sorted(card['data-progress'] for card in cards), ['deferred', 'responded', 'signal', 'unanswered', 'unanswered'])
+        for label in ('尚未回应', '已有回应待核对', '暂缓仍待跟进'):
+            self.assertIn(label, html)
+
     def test_empty_selected_day_warns_without_discarding_earlier_followups(self):
         for client in ('wechat', 'wecom'):
             with self.subTest(client=client):

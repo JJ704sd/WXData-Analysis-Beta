@@ -1,10 +1,10 @@
 # 个微与企微本地消息日报
 
-`wechat_daily_report.py` 和 `wecom_daily_report.py` 将四类助手的正式导出整理成每日概览、待跟进线索及本地 HTML 日报。两个入口固定各自客户端，共用整理内核，当前版本 1.6.0。
+`wechat_daily_report.py` 和 `wecom_daily_report.py` 将四类助手的正式导出整理成每日概览、待跟进线索及本地 HTML 日报。两个入口固定各自客户端，共用整理内核，当前版本 1.7.0。
 
 ## 输入和启动
 
-直接使用 [发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.6.0) 的 Windows x64 便携包或 Skill，不需要安装 Python、pip 或完整仓库。解压后双击 `Start.cmd` 或 `wechat-daily-report-ui.exe`／`wecom-daily-report-ui.exe` 打开桌面；带参数执行 `*-daily-report.exe` 供命令行与 Skill 使用。单文件源码位于仓库 `standalone/`，需要 Python 3.12+，桌面模式还需该 Python 自带 Tcl/Tk，无需 pip；已验证 Python 3.14.6。开发入口仍保留在 `WeBridge/scripts/`。
+直接使用 [发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/daily-v1.7.0) 的 Windows x64 便携包或 Skill，不需要安装 Python、pip 或完整仓库。解压后双击 `Start.cmd` 或 `wechat-daily-report-ui.exe`／`wecom-daily-report-ui.exe` 打开桌面；带参数执行 `*-daily-report.exe` 供命令行与 Skill 使用。单文件源码位于仓库 `standalone/`，需要 Python 3.12+，桌面模式还需该 Python 自带 Tcl/Tk，无需 pip；已验证 Python 3.14.6。开发入口仍保留在 `WeBridge/scripts/`。
 
 桌面沿用原助手的主题、卡片、日期选择器和滚动条，分为“准备日报”和“概览与待跟进”两页：
 
@@ -60,7 +60,7 @@
 
 每个独立请求各保留一条。关联回应优先使用原助手已关联的本地来源；引用编号的数字与字符串形式可匹配同一稳定编号，原始字段仍保留。没有已关联本地来源时，仅使用一致的引用编号；互相冲突的嵌入编号不关联到多个请求。同一秒内的回复只有明确引用时才可关联，不按记录排列猜测先后。
 
-只有私聊在当前回看窗口内仅存在一条先前请求、且回应没有引用内容时，才使用时间先后作线索。异常的群内点名目标保留待确认，不用字符串包含关系或字典键推断本人。完成或取消信号仍不是业务验收结论，所有线索均标注需要人工复核。
+私聊的普通回复只在尚未回应的新请求唯一、且回复晚于请求时按时间关联；之前请求已有回应后，后续新请求可形成另一轮。没有新请求时可延续最近已关联的一轮；多条尚未回应的请求、无法核对的引用及群聊普通回复不猜归属。已有回应不表示旧事项已办结。异常的群内点名目标保留待确认，不用字符串包含关系或字典键推断本人。完成或取消信号仍不是业务验收结论，所有线索均标注需要人工复核。
 
 请求、主题和风险识别只读取根文本及引用消息自身正文；被引用原文、转发记录和附件作者的内容保持原归属。原文、嵌套结构、解析缺口和来源在证据中保留，HTML 卡片的短预览不会截断证据文件。
 
@@ -68,7 +68,7 @@
 
 ## 跟进清单和回应预览
 
-每条线索保留已关联回应的发言人、时间、自身正文及内容缺口；HTML 在请求下方预览，桌面在选中详情中显示。被引用原文仍属于原作者；“已处理”和取消仍是待核对信号。搜索覆盖完整请求及回应，不受卡片短预览长度影响，可与私聊／群聊、进展筛选组合使用。
+每条线索保留已关联回应的发言人、时间、自身正文及内容缺口；HTML 在请求下方预览，桌面在选中详情中显示。被引用原文仍属于原作者；“已处理”和取消仍是待核对信号。搜索覆盖完整请求及回应，不受卡片短预览长度影响，可与私聊／群聊、进展筛选组合使用。范围下拉提供“尚未回应、已有回应待核对、暂缓仍待跟进”；尚未回应只描述材料中未找到可关联的回应，不表示历史未读或业务逾期。
 
 点击桌面“复制这条线索”复制当前选中项的完整请求、已关联回应和核对提示；筛选后没有选中项时不可复制。“打开跟进清单”或 HTML 的“下载全部待跟进清单”提供 UTF-8 文本 `followups.txt`，按本人相关待跟进、对象或身份待确认、处理／取消待核对分组，保留全部候选。清单包含原文但不自动添加技术 ID；程序不自动外发。需要交接时由用户选择实际需要的范围。
 
@@ -97,7 +97,7 @@
 | `diagnostics.jsonl` | 消息与来源 ID、复核编号、来源目录、摘要、内部状态、请求与回应关联依据 |
 | `manifest.json` | 日报客户端、日期、版本及另外五个文件的字节数、SHA-256 |
 
-输出 JSON 的 `schemaVersion` 为 1；线索兼容新增 `contentIssues` 字段，供界面提示内容缺口，旧字段继续保留。1.4.0 增加 `notices` 和 `contentGaps`；缺口索引通过 `evidenceId` 对应证据，`dateScope` 分为 `daily`、`lookback`、`undated`。成功进程回执增加 `notices` 和 `contentGapCount`，能力查询包含 `scopeNotices=true`、`contentGapReview=true`。1.5.0 的线索新增 `conversationMode` 和 `reply`（未关联时为 null，已关联时含时间、发言人、根正文、方向及内容缺口）；进程回执新增 `followupsFile`，能力查询增加 `replyPreview=true`、`followupChecklist=true`、`conversationModeFilter=true`。1.6.0 能力查询增加 `filteredChecklist=true`、`followupPagination=true`，报告持久化格式不变。诊断使用 `message_unicode_partial` 记录异常字符。报告与线索区域展示会话、发送人、时间、正文和业务影响，不展示消息 ID、来源指纹、复核编号、目录路径或原始 JSON 结构；HTML 排查入口默认折叠。名称缺失时显示“待确认”，不用 ID 代替业务名称。桌面材料选择与保存位置仍展示必要文件路径。引用、转发及附件中已有的正文按原归属展示，完整结构与追踪信息留在数据文件及日志。
+输出 JSON 的 `schemaVersion` 为 1；线索兼容新增 `contentIssues` 字段，供界面提示内容缺口，旧字段继续保留。1.4.0 增加 `notices` 和 `contentGaps`；缺口索引通过 `evidenceId` 对应证据，`dateScope` 分为 `daily`、`lookback`、`undated`。成功进程回执增加 `notices` 和 `contentGapCount`，能力查询包含 `scopeNotices=true`、`contentGapReview=true`。1.5.0 的线索新增 `conversationMode` 和 `reply`（未关联时为 null，已关联时含时间、发言人、根正文、方向及内容缺口）；进程回执新增 `followupsFile`，能力查询增加 `replyPreview=true`、`followupChecklist=true`、`conversationModeFilter=true`。1.6.0 能力查询增加 `filteredChecklist=true`、`followupPagination=true`，报告持久化格式不变。1.7.0 能力查询增加 `requestRoundMatching=true`、`progressFilters=true`，原有报告字段和格式继续兼容。诊断使用 `message_unicode_partial` 记录异常字符。报告与线索区域展示会话、发送人、时间、正文和业务影响，不展示消息 ID、来源指纹、复核编号、目录路径或原始 JSON 结构；HTML 排查入口默认折叠。名称缺失时显示“待确认”，不用 ID 代替业务名称。桌面材料选择与保存位置仍展示必要文件路径。引用、转发及附件中已有的正文按原归属展示，完整结构与追踪信息留在数据文件及日志。
 
 HTML 展示线索引用的证据及所有内容缺口的原文，完整回看证据在 JSONL。HTML 无外部资源，搜索、筛选和展开依据均在浏览器本地执行；消息内容进行 HTML 转义。输出以临时目录生成后整体发布，沿用已有 Windows 文件占用有限重试逻辑。数据文件和日志包含原文、技术标识及来源路径，分享时应选择实际需要的文件。
 
@@ -123,14 +123,14 @@ EXE 由 PyInstaller 6.22.3 构建，桌面与命令行二进制均内含 Python�
 & .\WeBridge\scripts\build_daily_reports.ps1 -Python "$PWD\.venv\Scripts\python.exe"
 ```
 
-输出为 `WeBridge/build/daily-1.6.0/` 下的 `standalone/`、`bin/`、`packages/`。每个客户端各构建桌面 UI 与命令行 EXE，`Start.cmd` 调用桌面，Skill 自动生成调用命令行。构建目录必须为新目录；也可使用 `-OutputDirectory` 指定 `WeBridge/build/` 下的新位置。四个 ZIP 分别是两个便携包和两个 Skill，均包含 Python、PyInstaller、Tcl、Tk 许可文本、文件清单及摘要；`release-matrix.json` 记录包摘要、实际能力查询和桌面组件初始化结果。
+输出为 `WeBridge/build/daily-1.7.0/` 下的 `standalone/`、`bin/`、`packages/`。每个客户端各构建桌面 UI 与命令行 EXE，`Start.cmd` 调用桌面，Skill 自动生成调用命令行。构建目录必须为新目录；也可使用 `-OutputDirectory` 指定 `WeBridge/build/` 下的新位置。四个 ZIP 分别是两个便携包和两个 Skill，均包含 Python、PyInstaller、Tcl、Tk 许可文本、文件清单及摘要；`release-matrix.json` 记录包摘要、实际能力查询和桌面组件初始化结果。
 
 从仓库根目录执行定向检查：
 
 ```powershell
 .\.venv\Scripts\python.exe WeBridge\scripts\check_assistants.py `
   --report .runtime\daily-checks.json `
-  test_daily_reports test_daily_business test_daily_refinements test_daily_history test_daily_ui test_daily_distribution.StandaloneDistributionTests `
+  test_daily_reports test_daily_business test_daily_conversations test_daily_refinements test_daily_history test_daily_ui test_daily_distribution.StandaloneDistributionTests `
   test_runtime_identity test_windows_hook_smoke.SourceBindingTests
 .\.venv\Scripts\python.exe WeBridge\scripts\check_runtime_identity.py
 ```
@@ -138,12 +138,12 @@ EXE 由 PyInstaller 6.22.3 构建，桌面与命令行二进制均内含 Python�
 已构建 ZIP 的隔离验证另运行：
 
 ```powershell
-$env:DAILY_DELIVERY_ROOT = "$PWD\WeBridge\build\daily-1.6.0\packages"
+$env:DAILY_DELIVERY_ROOT = "$PWD\WeBridge\build\daily-1.7.0\packages"
 .\.venv\Scripts\python.exe WeBridge\scripts\check_assistants.py `
   --report .runtime\daily-native-checks.json test_daily_distribution.WindowsDeliveryTests
 ```
 
-1.6.0 当前检查见 [分发验证记录](daily-delivery-validation.json)，1.0.0 源码基线记录保留在 [原验证文件](daily-reports-validation.json)。检查覆盖四类助手实际导出流程生成的合成材料、客户端绑定、隔离单文件运行、跨日与多请求、归属边界、业务界面与诊断日志、Tk 后台生成及取消、失败保留输入、重复提交防护、搜索筛选、日期选择、小窗口与较大字体布局、原生 EXE、中文及带空格路径、无 Python PATH、四个 ZIP 的 CRC/摘要及许可文本。回归包括数字引用、同秒回复、嵌入编号与本地来源不同、异常点名、整理期间取消、日期溢出和 Windows 发布失败回执。1.3.1 的异常字符、后续消息、原文冲突和 JSON 回执回归继续通过；1.4.0 的零消息范围提醒、历史待跟进保留、内容缺口查阅及桌面跳转回归继续通过。1.5.0 的回应预览、业务文本清单、组合筛选和选中复制继续回归；1.6.0 增加 1005 条线索跨页、全量匹配复制、中文清单保存、取消及写入失败保护、处理信号分组去重检查；单文件及实际 EXE 也执行对应样例。内置浏览器验证会话及进展组合筛选、带空格的回应关键词搜索、空结果禁用下载，以及实际下载清单与桌面文本逐字一致。历史故障依据及定向检查见 [对应处理记录](daily-history-fixes.md)。
+1.7.0 当前检查见 [分发验证记录](daily-delivery-validation.json)，1.0.0 源码基线记录保留在 [原验证文件](daily-reports-validation.json)。检查覆盖四类助手实际导出流程生成的合成材料、客户端绑定、隔离单文件运行、跨日与多请求、归属边界、业务界面与诊断日志、Tk 后台生成及取消、失败保留输入、重复提交防护、搜索筛选、日期选择、小窗口与较大字体布局、原生 EXE、中文及带空格路径、无 Python PATH、四个 ZIP 的 CRC/摘要及许可文本。回归包括数字引用、同秒回复、嵌入编号与本地来源不同、异常点名、整理期间取消、日期溢出和 Windows 发布失败回执。1.3.1 的异常字符、后续消息、原文冲突和 JSON 回执回归继续通过；1.4.0 的零消息范围提醒、历史待跟进保留、内容缺口查阅及桌面跳转回归继续通过。1.5.0 的回应预览、业务文本清单、组合筛选和选中复制继续回归；1.6.0 增加 1005 条线索跨页、全量匹配复制、中文清单保存、取消及写入失败保护、处理信号分组去重检查；单文件及实际 EXE 也执行对应样例。1.7.0 增加取消操作请求、跨日多轮回应、确认消息后仍保留取消／完成依据，以及三个进展筛选的回归；两个单文件和四个实际 EXE 分发入口也运行对应样例。内置浏览器检查进展与会话组合筛选、空结果、原文跳转及实际清单下载。历史故障依据及定向检查见 [对应处理记录](daily-history-fixes.md)。
 
 1.3.0 将线索整理改为按引用建立索引，保留多请求与回复边界，并在整理过程中检查取消。该版本的合成基准使用 1,200 条请求与各自对应的 1,200 条引用回复，分别运行三次；仅匹配内核的中位耗时从约 0.819 秒降至 0.005 秒，输出摘要一致。该结果不包含文件校验、消息读取和 HTML 写入，也不代表真实账号的整体耗时。
 

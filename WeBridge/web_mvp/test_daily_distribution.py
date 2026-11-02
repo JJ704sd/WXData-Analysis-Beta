@@ -16,6 +16,7 @@ from package_daily_reports import workbuddy_skill
 from test_daily_reports import DAY, formal_export, message
 from test_daily_history import unicode_export
 from test_daily_business import GapCards, followup_export, gap_export
+from test_daily_conversations import conversation_export
 
 
 def clean_environment():
@@ -99,6 +100,21 @@ def assert_followup_report(test, process, output):
     manifest = json.loads((output / 'manifest.json').read_text(encoding='utf-8'))
     item = next(item for item in manifest['files'] if item['path'] == 'followups.txt')
     test.assertEqual(hashlib.sha256((output / item['path']).read_bytes()).hexdigest(), item['sha256'])
+
+
+def assert_conversation_report(test, process, output):
+    test.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+    report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+    clues = {item['text']: item for item in report['followups']}
+    test.assertEqual(len(clues), 5)
+    test.assertEqual(clues['请安排今天发货']['state'], 'deferred')
+    test.assertEqual(clues['请安排今天发货']['reply']['text'], '明天再回复')
+    test.assertEqual(clues['请提供订单进度']['state'], 'withdrawal_signal')
+    test.assertEqual(clues['请提供订单进度']['reply']['text'], '取消该请求，不用了')
+    test.assertEqual(clues['麻烦取消订单']['state'], 'needs_response')
+    test.assertEqual(clues['请取消订单']['state'], 'needs_response')
+    cards = GapCards((output / 'report.html').read_text(encoding='utf-8')).clues
+    test.assertEqual(sorted(card['data-progress'] for card in cards), ['deferred', 'responded', 'signal', 'unanswered', 'unanswered'])
 
 
 class StandaloneDistributionTests(unittest.TestCase):
@@ -216,6 +232,16 @@ class StandaloneDistributionTests(unittest.TestCase):
                 result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
                                       '--export-root', source, '--output', output], cwd=self.base)
                 assert_followup_report(self, result, output)
+
+    def test_single_files_preserve_multiturn_cancellation_and_progress_filters(self):
+        for client in ('wechat', 'wecom'):
+            for mode in ('direct', 'group'):
+                with self.subTest(client=client, mode=mode):
+                    source = conversation_export(self.base, client + mode, client=client, mode=mode)
+                    output = self.base / (client + mode + '-workflow')
+                    result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
+                                          '--export-root', source, '--output', output], cwd=self.base)
+                    assert_conversation_report(self, result, output)
 
     def test_tracked_single_files_match_the_maintained_generation(self):
         for client in ('wechat', 'wecom'):
@@ -413,6 +439,20 @@ class WindowsDeliveryTests(unittest.TestCase):
                     result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
                                           '--export-root', source, '--output', output], cwd=self.base)
                     assert_followup_report(self, result, output)
+
+
+    def test_native_multiturn_cancellation_and_progress_filters_in_all_deliveries(self):
+        for client in ('wechat', 'wecom'):
+            for mode in ('direct', 'group'):
+                source = conversation_export(self.base, client + mode + '-workflow', client=client, mode=mode)
+                for kind in ('portable', 'skill'):
+                    with self.subTest(client=client, mode=mode, delivery=kind):
+                        directory = self.packages[client, kind]
+                        runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                        output = self.base / (client + mode + kind + '-workflow')
+                        result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
+                                              '--export-root', source, '--output', output], cwd=self.base)
+                        assert_conversation_report(self, result, output)
 
 
 if __name__ == '__main__':

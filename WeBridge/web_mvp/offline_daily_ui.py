@@ -13,7 +13,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from offline_calendar import DatePicker
 from offline_daily import ArchiveError, BEIJING, DailyReportCancelled, DailyReportError, build_daily_report, display_text
-from offline_daily_html import _business_name, followup_group, followup_text, render_followups_text
+from offline_daily_html import FOLLOWUP_FILTERS, _business_name, followup_group, followup_progress, followup_text, render_followups_text
 from offline_theme import (ACCENT, BODY, BORDER, CANVAS, CAPTION, DISPLAY, SURFACE,
                            TEXT, TEXT_MUTED, apply_theme, card)
 
@@ -229,7 +229,7 @@ class DailyReportApp:
         self.search_entry = ttk.Entry(bar, textvariable=self.search)
         self.search_entry.pack(side='left', fill='x', expand=True, padx=8)
         self.filter_box = ttk.Combobox(bar, textvariable=self.filter, state='readonly', width=17,
-                                       values=('全部线索', '本人相关待跟进', '对象或身份待确认', '处理信号待核对'))
+                                       values=tuple(label for _, label in FOLLOWUP_FILTERS))
         self.filter_box.pack(side='left')
         self.mode_box = ttk.Combobox(bar, textvariable=self.mode_filter, state='readonly', width=9,
                                      values=('全部会话', '仅私聊', '仅群聊'))
@@ -493,14 +493,14 @@ class DailyReportApp:
 
     def filter_followups(self):
         query, choice = self.search.get().strip().casefold(), self.filter.get()
+        choice = {label: key for key, label in FOLLOWUP_FILTERS}.get(choice, 'all')
         rows = []
         for index, row in enumerate(self.followups):
             if self.mode_filter.get() == '仅私聊' and row.get('conversationMode') != 'direct':
                 continue
             if self.mode_filter.get() == '仅群聊' and row.get('conversationMode') != 'group':
                 continue
-            group = {'本人相关待跟进': 'personal', '对象或身份待确认': 'uncertain', '处理信号待核对': 'signal'}.get(choice)
-            if group and followup_group(row) != group:
+            if choice != 'all' and choice not in {followup_group(row), followup_progress(row)}:
                 continue
             name = _business_name(row['chatName'], row['chatId'], '会话名称待确认')
             if query and query not in followup_text(row).casefold():
