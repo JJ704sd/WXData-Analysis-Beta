@@ -259,6 +259,8 @@ class DailyReportApp:
         ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
         self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
         self.open_selected_button.pack(side='right', padx=(8, 0))
+        self.open_reply_button = self._button(selection_bar, '查看这条回应', lambda: self.open_selected(reply=True), state='disabled')
+        self.open_reply_button.pack(side='right', padx=(8, 0))
         self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
         self.copy_selected_button.pack(side='right', padx=(8, 0))
         scope_bar = tk.Frame(self.results, background=SURFACE)
@@ -512,6 +514,7 @@ class DailyReportApp:
     def show_page(self):
         self.followup_tree.delete(*self.followup_tree.get_children())
         self.open_selected_button.configure(state='disabled')
+        self.open_reply_button.configure(state='disabled')
         self.copy_selected_button.configure(state='disabled')
         total = len(self.filtered_rows)
         pages = max(1, (total + self.page_size - 1) // self.page_size)
@@ -580,8 +583,11 @@ class DailyReportApp:
         selected = self.followup_tree.selection()
         self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
         self.copy_selected_button.configure(state='normal' if selected else 'disabled')
+        self.open_reply_button.configure(state='disabled')
         if selected:
             row = self.followups[int(selected[0])]
+            if self.result and row.get('replyEvidenceId'):
+                self.open_reply_button.configure(state='normal')
             self._set_detail(followup_text(row))
 
     def copy_selected(self):
@@ -604,17 +610,20 @@ class DailyReportApp:
         else:
             webbrowser.open(path.resolve().as_uri())
 
-    def open_selected(self):
+    def open_selected(self, *, reply=False):
         selected = self.followup_tree.selection()
         if not self.result or not selected:
             return
         row = self.followups[int(selected[0])]
-        target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + row['evidenceId']
+        identifier = row.get('replyEvidenceId') if reply else row['evidenceId']
+        if not identifier:
+            return
+        target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + identifier
         try:
             self.opener(target)
         except (OSError, ValueError):
-            self._log('open_selected_failed', traceback.format_exc())
-            self.status.set('暂时无法打开这条原文，可打开 HTML 日报查看；已有结果保留。')
+            self._log('open_reply_failed' if reply else 'open_selected_failed', traceback.format_exc())
+            self.status.set('暂时无法打开这条' + ('回应' if reply else '原文') + '，可打开 HTML 日报查看；已有结果保留。')
 
     def open_result(self, key):
         if self.result:

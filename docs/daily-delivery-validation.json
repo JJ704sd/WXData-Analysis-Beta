@@ -52,7 +52,9 @@
     "saveCancellationAndFailurePreserveFilters": true,
     "existingFilesNotOverwritten": true,
     "incompleteNewFileRemovedAfterWriteFailure": true,
-    "progressFiltersAndCorrectedReplyCopy": true
+    "progressFiltersAndCorrectedReplyCopy": true,
+    "selectedReplyOpensMatchingEvidence": true,
+    "replyNavigationDisabledWithoutSelectionOrLinkedResponse": true
   },
   "targetedRefinements": {
     "numericQuoteIdentifiers": true,
@@ -170,10 +172,10 @@
     }
   },
   "schemaVersion": 1,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "date": "2026-11-02",
   "ok": true,
-  "uniqueTestsPassed": 88,
+  "uniqueTestsPassed": 98,
   "unresolvedFailures": 0,
   "unresolvedErrors": 0,
   "skipped": 0,
@@ -182,17 +184,19 @@
     "targetedRefinements": 7,
     "historicalEncodingAtDailyBoundary": 2,
     "businessScopeAndFollowupWorkflows": 9,
-    "nativeDesktopAndCancellation": 18,
-    "standaloneDistribution": 11,
+    "nativeDesktopAndCancellation": 20,
+    "standaloneDistribution": 12,
     "accountSourceRegression": 9,
-    "compiledWindowsDelivery": 9,
-    "conversationRoundRegressions": 7
+    "compiledWindowsDelivery": 10,
+    "conversationRoundRegressions": 7,
+    "signalPolarityRegressions": 6
   },
   "runs": [
     {
       "schemaVersion": 1,
       "date": "2026-11-02",
       "targets": [
+        "test_daily_signals",
         "test_daily_conversations",
         "test_daily_business",
         "test_daily_history",
@@ -203,11 +207,11 @@
         "test_runtime_identity",
         "test_windows_hook_smoke.SourceBindingTests"
       ],
-      "testsRun": 79,
+      "testsRun": 88,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 32.57,
+      "seconds": 31.62,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -222,11 +226,11 @@
       "targets": [
         "test_daily_distribution.WindowsDeliveryTests"
       ],
-      "testsRun": 9,
+      "testsRun": 10,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "seconds": 94.73,
+      "seconds": 108.63,
       "ok": true,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -243,7 +247,7 @@
   },
   "pythonSyntax": {
     "ok": true,
-    "files": 13
+    "files": 11
   },
   "standaloneSourceMatchesMaintenanceModules": true,
   "standaloneSourceMatchesPackagedScripts": true,
@@ -259,51 +263,51 @@
   "sourceScripts": [
     {
       "path": "standalone/wechat_daily_report.py",
-      "bytes": 137609,
-      "sha256": "f13f8b460838867ce551b614fcb98656aad0370bc7844e63f5bc296a42a3852b"
+      "bytes": 139709,
+      "sha256": "351cbb503f800c8d52d05bcb16508c2b2e866bbc3421548e952a393e6cc2e366"
     },
     {
       "path": "standalone/wecom_daily_report.py",
-      "bytes": 137607,
-      "sha256": "0fc94f2076f0810a0bf0d4b6a692c07add02107c977c05fa64068640d2ba2d41"
+      "bytes": 139707,
+      "sha256": "750c84f47c02ec2f33c890bb5057d13ce3c81aad18ed90d005b75ca0274fe780"
     }
   ],
   "products": [
     {
       "client": "wechat",
       "delivery": "portable",
-      "directory": "WeChat-Daily-Report-1.7.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-1.7.0-Windows-x64.zip",
-      "version": "1.7.0",
-      "bytes": 26332625,
-      "sha256": "84de5add3a4209c32c2534b89749526daa6397f5e014732f5c9f405669f5e823"
+      "directory": "WeChat-Daily-Report-1.8.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-1.8.0-Windows-x64.zip",
+      "version": "1.8.0",
+      "bytes": 26334049,
+      "sha256": "2d9afc6cf102ebfd2f4d6f14b708b69940d610ed362439b1a07e7f7150d1abf7"
     },
     {
       "client": "wechat",
       "delivery": "skill",
-      "directory": "WeChat-Daily-Report-Skill-1.7.0-Windows-x64",
-      "archive": "WeChat-Daily-Report-Skill-1.7.0-Windows-x64.zip",
-      "version": "1.7.0",
-      "bytes": 26336880,
-      "sha256": "36804fffa8ae56e97cee4960ad4878f029344755cb1dbff9b24702e65d7670ee"
+      "directory": "WeChat-Daily-Report-Skill-1.8.0-Windows-x64",
+      "archive": "WeChat-Daily-Report-Skill-1.8.0-Windows-x64.zip",
+      "version": "1.8.0",
+      "bytes": 26338514,
+      "sha256": "bb225f361a8cd24e7fd2398167e47b4d5c49bb74dd20c6ca255e9456ce17aa53"
     },
     {
       "client": "wecom",
       "delivery": "portable",
-      "directory": "WeCom-Daily-Report-1.7.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-1.7.0-Windows-x64.zip",
-      "version": "1.7.0",
-      "bytes": 26331913,
-      "sha256": "739d1c52f1b5e519a9ea2c3ce98d250c81bc3c3dc880f080d9ff381282e221ff"
+      "directory": "WeCom-Daily-Report-1.8.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-1.8.0-Windows-x64.zip",
+      "version": "1.8.0",
+      "bytes": 26333734,
+      "sha256": "dddc564e1fbb7af126427e0ce881eebc7e58c7f0e600b10d612292f1e45a1f84"
     },
     {
       "client": "wecom",
       "delivery": "skill",
-      "directory": "WeCom-Daily-Report-Skill-1.7.0-Windows-x64",
-      "archive": "WeCom-Daily-Report-Skill-1.7.0-Windows-x64.zip",
-      "version": "1.7.0",
-      "bytes": 26336168,
-      "sha256": "e17f71fefe44f935a297a03c10eef736e64b905d905004ea5220aeda67436d80"
+      "directory": "WeCom-Daily-Report-Skill-1.8.0-Windows-x64",
+      "archive": "WeCom-Daily-Report-Skill-1.8.0-Windows-x64.zip",
+      "version": "1.8.0",
+      "bytes": 26338198,
+      "sha256": "4d4a4e5f0947ad9eb489aff279e6cc02d1848432988f4bb5ab428e6d35ec231c"
     }
   ],
   "capabilities": {
@@ -311,7 +315,7 @@
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wechat",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "conversationModes": [
         "group",
         "direct"
@@ -331,13 +335,15 @@
       "followupPagination": true,
       "requestRoundMatching": true,
       "progressFilters": true,
+      "signalPolarity": true,
+      "replyEvidenceNavigation": true,
       "requiresPythonInstallation": false
     },
     "wecom": {
       "schemaVersion": 1,
       "role": "daily_report",
       "client": "wecom",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "conversationModes": [
         "group",
         "direct"
@@ -357,6 +363,8 @@
       "followupPagination": true,
       "requestRoundMatching": true,
       "progressFilters": true,
+      "signalPolarity": true,
+      "replyEvidenceNavigation": true,
       "requiresPythonInstallation": false
     }
   },
@@ -364,7 +372,7 @@
     "wechat": {
       "ok": true,
       "client": "wechat",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -381,7 +389,7 @@
     "wecom": {
       "ok": true,
       "client": "wecom",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "desktopUI": true,
       "tkVersion": "8.6.15",
       "tabs": 2,
@@ -426,7 +434,7 @@
     "crossProcessClipboardSha256Verified": true
   },
   "browserInteraction": {
-    "version": "1.7.0",
+    "version": "1.8.0",
     "date": "2026-11-02",
     "ok": true,
     "browser": "ChatGPT In-app Browser",
@@ -434,16 +442,15 @@
     "syntheticDataOnly": true,
     "checks": {
       "initialAllMatches": true,
-      "threeProgressFilterCounts": true,
-      "privateProgressCombination": true,
+      "privateProgressFilterCounts": true,
+      "affirmativeCompletionPreview": true,
       "actualFilteredDownloadMatchesDesktopText": true,
-      "zeroMatchesDisableDownload": true,
-      "withdrawalPreviewPreservesOriginalSignal": true,
       "matchingReplyEvidenceExpanded": true,
+      "zeroMatchesDisableDownload": true,
       "noConsoleErrors": true
     },
-    "filteredDownloadBytes": 750,
-    "filteredDownloadSha256": "402b218380b79132787b1b2e6f42153394aa43f0d1a96a48cc60b57320edcb55",
+    "filteredDownloadBytes": 882,
+    "filteredDownloadSha256": "1ada1021bef1d2e26568f137efb3ee51ca5b934c5beded8bbdea5325a5e1c22c",
     "nativeDesktopVisualValidation": false
   },
   "preRepairReproductions": [
@@ -451,13 +458,13 @@
       "schemaVersion": 1,
       "date": "2026-11-02",
       "targets": [
-        "test_daily_conversations"
+        "test_daily_signals"
       ],
-      "testsRun": 7,
-      "failures": 13,
+      "testsRun": 6,
+      "failures": 39,
       "errors": 0,
       "skipped": 0,
-      "seconds": 0.61,
+      "seconds": 1.06,
       "ok": false,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -465,33 +472,59 @@
       "python": "3.14.6",
       "platform": "win32",
       "failedTests": [
-        "test_daily_conversations.ConversationWorkflowTests.test_acknowledgement_keeps_the_requesters_cancellation_and_its_evidence (client='wechat', mode='direct')",
-        "test_daily_conversations.ConversationWorkflowTests.test_acknowledgement_keeps_the_requesters_cancellation_and_its_evidence (client='wechat', mode='group')",
-        "test_daily_conversations.ConversationWorkflowTests.test_acknowledgement_keeps_the_requesters_cancellation_and_its_evidence (client='wecom', mode='direct')",
-        "test_daily_conversations.ConversationWorkflowTests.test_acknowledgement_keeps_the_requesters_cancellation_and_its_evidence (client='wecom', mode='group')",
-        "test_daily_conversations.ConversationWorkflowTests.test_cancel_order_directives_and_questions_are_requests_in_both_clients_and_modes (client='wechat', mode='direct')",
-        "test_daily_conversations.ConversationWorkflowTests.test_cancel_order_directives_and_questions_are_requests_in_both_clients_and_modes (client='wechat', mode='group')",
-        "test_daily_conversations.ConversationWorkflowTests.test_cancel_order_directives_and_questions_are_requests_in_both_clients_and_modes (client='wecom', mode='direct')",
-        "test_daily_conversations.ConversationWorkflowTests.test_cancel_order_directives_and_questions_are_requests_in_both_clients_and_modes (client='wecom', mode='group')",
-        "test_daily_conversations.ConversationWorkflowTests.test_completion_evidence_survives_an_ack_but_explicit_deferral_can_correct_it",
-        "test_daily_conversations.ConversationWorkflowTests.test_explicit_reply_to_old_request_does_not_consume_the_new_pending_request",
-        "test_daily_conversations.ConversationWorkflowTests.test_new_cancel_action_does_not_withdraw_an_earlier_request",
-        "test_daily_conversations.ConversationWorkflowTests.test_two_private_rounds_across_days_keep_each_request_and_its_own_response (client='wechat')",
-        "test_daily_conversations.ConversationWorkflowTests.test_two_private_rounds_across_days_keep_each_request_and_its_own_response (client='wecom')"
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='direct', text='如果已经处理，请告诉我')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='direct', text='已经处理了吗？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='direct', text='问题是否解决了？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='direct', text='问题如果解决了再说')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='group', text='如果已经处理，请告诉我')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='group', text='已经处理了吗？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='group', text='问题是否解决了？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wechat', mode='group', text='问题如果解决了再说')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='direct', text='如果已经处理，请告诉我')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='direct', text='已经处理了吗？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='direct', text='问题是否解决了？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='direct', text='问题如果解决了再说')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='group', text='如果已经处理，请告诉我')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='group', text='已经处理了吗？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='group', text='问题是否解决了？')",
+        "test_daily_signals.SignalPolarityTests.test_completion_questions_and_conditions_remain_unconfirmed_responses (client='wecom', mode='group', text='问题如果解决了再说')",
+        "test_daily_signals.SignalPolarityTests.test_explicit_unfinished_response_corrects_an_earlier_completion_signal (text='尚未完成验收')",
+        "test_daily_signals.SignalPolarityTests.test_explicit_unfinished_response_corrects_an_earlier_completion_signal (text='没有处理')",
+        "test_daily_signals.SignalPolarityTests.test_explicit_unfinished_response_corrects_an_earlier_completion_signal (text='未能发送')",
+        "test_daily_signals.SignalPolarityTests.test_explicit_unfinished_response_corrects_an_earlier_completion_signal (text='没完成')",
+        "test_daily_signals.SignalPolarityTests.test_negated_deferral_does_not_hide_completed_work",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='direct', text='不要取消订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='direct', text='别取消该请求')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='direct', text='没有取消这笔订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='direct', text='不是说不用了')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='group', text='不要取消订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='group', text='别取消该请求')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='group', text='没有取消这笔订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wechat', mode='group', text='不是说不用了')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='direct', text='不要取消订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='direct', text='别取消该请求')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='direct', text='没有取消这笔订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='direct', text='不是说不用了')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='group', text='不要取消订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='group', text='别取消该请求')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='group', text='没有取消这笔订单')",
+        "test_daily_signals.SignalPolarityTests.test_negated_withdrawal_does_not_cancel_the_original_request (client='wecom', mode='group', text='不是说不用了')",
+        "test_daily_signals.SignalPolarityTests.test_unrelated_negative_clause_does_not_erase_affirmative_completion (text='没有问题，已经处理好了')",
+        "test_daily_signals.SignalPolarityTests.test_unrelated_negative_clause_does_not_erase_affirmative_completion (text='没有异常；问题已经解决')"
       ]
     },
     {
       "schemaVersion": 1,
       "date": "2026-11-02",
       "targets": [
-        "test_daily_business.DailyBusinessTests.test_html_progress_filters_distinguish_unanswered_replied_and_deferred_clues",
-        "test_daily_ui.DailyDesktopTests.test_progress_filters_and_saved_scope_keep_corrected_conversation_states"
+        "test_daily_ui.DailyDesktopTests.test_reply_original_navigation_requires_a_selected_linked_response",
+        "test_daily_ui.DailyDesktopTests.test_reply_navigation_failure_preserves_selection_filters_and_report"
       ],
       "testsRun": 2,
-      "failures": 4,
-      "errors": 1,
+      "failures": 0,
+      "errors": 2,
       "skipped": 0,
-      "seconds": 0.9,
+      "seconds": 1.03,
       "ok": false,
       "usesSyntheticData": true,
       "realAccountValidation": false,
@@ -499,11 +532,8 @@
       "python": "3.14.6",
       "platform": "win32",
       "failedTests": [
-        "test_daily_ui.DailyDesktopTests.test_progress_filters_and_saved_scope_keep_corrected_conversation_states (filter='尚未回应')",
-        "test_daily_ui.DailyDesktopTests.test_progress_filters_and_saved_scope_keep_corrected_conversation_states (filter='已有回应待核对')",
-        "test_daily_ui.DailyDesktopTests.test_progress_filters_and_saved_scope_keep_corrected_conversation_states (filter='暂缓仍待跟进')",
-        "test_daily_ui.DailyDesktopTests.test_progress_filters_and_saved_scope_keep_corrected_conversation_states",
-        "test_daily_business.DailyBusinessTests.test_html_progress_filters_distinguish_unanswered_replied_and_deferred_clues"
+        "test_daily_ui.DailyDesktopTests.test_reply_original_navigation_requires_a_selected_linked_response",
+        "test_daily_ui.DailyDesktopTests.test_reply_navigation_failure_preserves_selection_filters_and_report"
       ]
     }
   ],
@@ -537,5 +567,26 @@
     "singleFileAndAllWindowsDeliveriesChecked": true,
     "persistentReportSchemaChanged": false,
     "newProductionDependencies": []
+  },
+  "signalPolarity": {
+    "negatedWithdrawalDoesNotCancelRequest": true,
+    "completionQuestionsAndConditionsRemainUnconfirmed": true,
+    "unrelatedNegativeClauseDoesNotEraseCompletion": true,
+    "explicitUnfinishedResponseCorrectsCompletion": true,
+    "negatedDeferralDoesNotHideCompletion": true,
+    "affirmativeWithdrawalSurvivesUnrelatedNegativeClause": true,
+    "callerTestsCoverBothClientsAndModes": true,
+    "originalExportBytesUnchanged": true,
+    "singleFileAndAllWindowsDeliveriesChecked": true,
+    "persistentReportSchemaChanged": false,
+    "newProductionDependencies": []
+  },
+  "replyEvidenceNavigation": {
+    "selectedLinkedReplyOnly": true,
+    "requestEntryRetained": true,
+    "failurePreservesSelectionFiltersDetailsAndReport": true,
+    "smallWindowAndLargeFontBounds": true,
+    "desktopOpenCallbacksUseTestDoubles": true,
+    "compiledDesktopFullInteractionVerified": false
   }
 }

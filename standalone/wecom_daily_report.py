@@ -7,14 +7,14 @@
 # web_mvp/offline_review.py sha256-utf8-lf=9af12e9b47ec3ef14947d8ade8990cc2eddf92bc46073e09ea0b6c16c08bf263
 # web_mvp/offline_images.py sha256-utf8-lf=47c807787890376e924d452bc6b1c37387c2f397e38448b5824fb872c1914030
 # web_mvp/offline_reporting.py sha256-utf8-lf=f22e28296eda8a4cc222be86a8393a0daf8c8a9d639fd6abfcd333ed66973f17
-# scripts/chat_release.py sha256-utf8-lf=c8cd3a66023836d99a84b6e1c5f4749b872bc059927a2fd97e667648efbf63e2
+# scripts/chat_release.py sha256-utf8-lf=50d0899dfd362f954c6b63b2814430fd0d05ba1061072518d76c7cc7a505ab97
 # web_mvp/offline_content_status.py sha256-utf8-lf=20672f4a1fd5a2d9e9e7e7d7046609d565514288c85227e01d50155669e29b12
-# web_mvp/offline_daily.py sha256-utf8-lf=4b307c035e638031fc9c5a91eb8bda3145ac8eb6950c51d028e4f847ee5f22d6
+# web_mvp/offline_daily.py sha256-utf8-lf=21de2d09e70400c0545bccba6217ba495b7ef4bea19519386406f41755584386
 # web_mvp/offline_daily_html.py sha256-utf8-lf=386b4213718829a73f7d49f6613ba4cf77d9d5875e22a3d25195e5c99a5513a5
 # web_mvp/offline_theme.py sha256-utf8-lf=6a61ebab1fe42bc4866be79d6ff4f7d3d476c171de4373e15c442d68c770d370
 # web_mvp/offline_calendar.py sha256-utf8-lf=7bac70fb8f70af7edb21555b9d1a66fc17f9aa08efe5c83faf4700d585c5b015
-# web_mvp/offline_daily_ui.py sha256-utf8-lf=2b4a938bbf90550c6634745993bcb8fbb5c01aac63f1d13ec9b876739e065d1f
-# scripts/daily_report.py sha256-utf8-lf=df61ecea5031741280c928f07ba7507d451df05d86e4fa428b21f842bb4ec541
+# web_mvp/offline_daily_ui.py sha256-utf8-lf=d2a31802030f825ddcb63f1b1aa85f573338cc1db9fe03b3799b1cdf1b862a3a
+# scripts/daily_report.py sha256-utf8-lf=43cb7f3bbe13b2e3b0a45b2ae2d3bb02bf28f38d0a891111ae4b4bc712d3a7c1
 
 import os
 import time
@@ -85,7 +85,7 @@ def message_nodes(root):
             yield from walk(node['quote']['message'], (*trail, '引用来源'), (*node_path, ('quote', 0)))
     yield from walk(root)
 REPORT_FILE = '解析结果.md'
-DAILY_REPORT_VERSION = '1.7.0'
+DAILY_REPORT_VERSION = '1.8.0'
 'Pure, caller-visible status and content-gap rules.'
 _FORWARD_REASONS = {'item_limit': '转发记录超过条目上限，未完整读取', 'depth_limit': '转发记录嵌套层数超过上限，未完整读取', 'invalid_xml': '转发记录 XML 无法解析，未完整读取', 'partially_supported': '转发记录仅部分字段适配，未完整读取'}
 
@@ -192,10 +192,14 @@ def _progress(callback, phase, **details):
         callback({'phase': phase, **details})
 REQUEST = re.compile('请(?:您|你|大家|各位)?(?:尽快|及时|务必|协助|帮忙|先)?(?:问|帮|确认|回复|提供|处理|安排|发|查|看|跟进)|麻烦|能否|是否|可以吗|什么时候|多少钱|进展(?:如何|怎么样)|跟进(?:一下|下)|[?？]', re.I)
 CANCEL_REQUEST = re.compile('(?:请|麻烦|能否|帮我).{0,8}取消|取消.{0,16}(?:吗|[?？])')
-DEFER = re.compile('稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)')
+DEFER = re.compile('稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)|(?:尚未|暂未|未能|没有|没能|未|没)(?:处理|完成|解决|确认|回复|发送|发出|验收)')
 COMPLETION = re.compile('已(?:经)?(?:处理|完成|发送|发出|解决|确认|回复)|问题.{0,4}解决')
 NEGATION = re.compile('没有|未(?:能|完成|处理|解决|确认)|还没|尚未|暂未|不能|无法|别|不要')
 WITHDRAWAL = re.compile('不用了|不需要了|取消(?:这|该|本次|请求|需求|订单)|先不(?:用|处理|做)|暂缓')
+SIGNAL_CLAUSES = re.compile('([^，,。.!！;；\\n?？]+)([，,。.!！;；\\n?？]|$)')
+SIGNAL_NEGATED_PREFIX = re.compile('(?:不要|不用|不必|不能|不会|不是|不需要|并非|无需|别|勿|没有|还没有|还没|没能|未能|没|尚未|并未|未)(?:再|去|进行|直接|擅自|随意|真的|已经|帮我|说|是|就|说过|说要|说会)?\\s*$')
+SIGNAL_CONDITION = re.compile('如果|假如|要是|是否|能否|有没有|是不是|会不会')
+SIGNAL_QUESTION_SUFFIX = re.compile('吗|么|与否|的话|以后|之后|之前|(?:没(?:有)?|否)\\s*$')
 URGENCY = re.compile('紧急|尽快|催|截止|最后期限|逾期|投诉|索赔')
 TOPICS = {'报价与价格': ('报价', '价格', '费用', 'quotation'), '订单与交付': ('订单', '交付', '发货', '运单', '提货'), '合同与方案': ('合同', '方案', '协议'), '付款与对账': ('付款', '支付', '发票', '对账', 'invoice'), '需求与上线': ('需求', '上线', '发布', '功能'), '问题与售后': ('故障', '异常', '售后', '投诉', '索赔'), '会议与安排': ('会议', '开会', '安排', '预约')}
 STATE_LABELS = {'needs_response': '尚未找到对应回复', 'deferred': '本人暂缓处理，仍待跟进', 'responded': '已有后续回复，处理结果待核对', 'completion_signal': '本人表示已处理，待核对', 'withdrawal_signal': '对方表示取消或暂缓，待核对', 'target_uncertain': '群内请求，对象待确认', 'identity_unknown': '本人身份未知，归属待确认'}
@@ -420,6 +424,22 @@ def _quote_ids(row):
         return {source}
     return {value for value in (identifier(quote.get('messageId')), identifier(nested)) if value is not None}
 
+def _has_signal(body, pattern, *, completion=False):
+    """Interpret a rule match within its clause, retaining uncertain wording."""
+    for clause, boundary in SIGNAL_CLAUSES.findall(body):
+        if boundary in {'?', '？'}:
+            continue
+        for match in pattern.finditer(clause):
+            prefix, suffix = (clause[:match.start()], clause[match.end():])
+            if SIGNAL_NEGATED_PREFIX.search(prefix) or SIGNAL_CONDITION.search(prefix + match.group()):
+                continue
+            if SIGNAL_QUESTION_SUFFIX.search(suffix):
+                continue
+            if completion and NEGATION.search(match.group()):
+                continue
+            return True
+    return False
+
 def _followups(records, my_names, *, progress=None, cancel=None):
     groups = defaultdict(list)
     for index, row in enumerate(records):
@@ -435,7 +455,7 @@ def _followups(records, my_names, *, progress=None, cancel=None):
             if processed % 256 == 0:
                 _checkpoint(cancel)
             body = _primary(row)
-            withdrawn = bool(WITHDRAWAL.search(body))
+            withdrawn = _has_signal(body, WITHDRAWAL)
             cancel_request = bool(CANCEL_REQUEST.search(body))
             is_request = row['direction'] != 'outgoing' and (REQUEST.search(body) or cancel_request) and (not withdrawn or cancel_request)
             if is_request:
@@ -490,13 +510,13 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                 if target != 'self':
                     continue
                 if later['direction'] == 'outgoing':
-                    next_state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and (not NEGATION.search(body)) else 'responded'
-                    if state == 'withdrawal_signal' or (state == 'completion_signal' and next_state == 'responded' and (not NEGATION.search(body))):
+                    next_state = 'deferred' if _has_signal(body, DEFER) else 'completion_signal' if _has_signal(body, COMPLETION, completion=True) else 'responded'
+                    if state == 'withdrawal_signal' or (state == 'completion_signal' and next_state == 'responded'):
                         continue
                     reply = later
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
                     state = next_state
-                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(body):
+                elif later['senderId'] == request['senderId'] and _has_signal(body, WITHDRAWAL):
                     reply, state = (later, 'withdrawal_signal')
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)
@@ -1318,6 +1338,8 @@ around a flat surface and status chips are painted on a canvas.
             ttk.Label(selection_bar, textvariable=self.result_count, style='Hint.TLabel').pack(side='left', fill='x', expand=True)
             self.open_selected_button = self._button(selection_bar, '查看这条原文', self.open_selected, state='disabled')
             self.open_selected_button.pack(side='right', padx=(8, 0))
+            self.open_reply_button = self._button(selection_bar, '查看这条回应', lambda: self.open_selected(reply=True), state='disabled')
+            self.open_reply_button.pack(side='right', padx=(8, 0))
             self.copy_selected_button = self._button(selection_bar, '复制这条线索', self.copy_selected, state='disabled')
             self.copy_selected_button.pack(side='right', padx=(8, 0))
             scope_bar = tk.Frame(self.results, background=SURFACE)
@@ -1564,6 +1586,7 @@ around a flat surface and status chips are painted on a canvas.
         def show_page(self):
             self.followup_tree.delete(*self.followup_tree.get_children())
             self.open_selected_button.configure(state='disabled')
+            self.open_reply_button.configure(state='disabled')
             self.copy_selected_button.configure(state='disabled')
             total = len(self.filtered_rows)
             pages = max(1, (total + self.page_size - 1) // self.page_size)
@@ -1629,8 +1652,11 @@ around a flat surface and status chips are painted on a canvas.
             selected = self.followup_tree.selection()
             self.open_selected_button.configure(state='normal' if selected and self.result else 'disabled')
             self.copy_selected_button.configure(state='normal' if selected else 'disabled')
+            self.open_reply_button.configure(state='disabled')
             if selected:
                 row = self.followups[int(selected[0])]
+                if self.result and row.get('replyEvidenceId'):
+                    self.open_reply_button.configure(state='normal')
                 self._set_detail(followup_text(row))
 
         def copy_selected(self):
@@ -1653,17 +1679,20 @@ around a flat surface and status chips are painted on a canvas.
             else:
                 webbrowser.open(path.resolve().as_uri())
 
-        def open_selected(self):
+        def open_selected(self, *, reply=False):
             selected = self.followup_tree.selection()
             if not self.result or not selected:
                 return
             row = self.followups[int(selected[0])]
-            target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + row['evidenceId']
+            identifier = row.get('replyEvidenceId') if reply else row['evidenceId']
+            if not identifier:
+                return
+            target = Path(self.result['htmlFile']).resolve().as_uri() + '#' + identifier
             try:
                 self.opener(target)
             except (OSError, ValueError):
-                self._log('open_selected_failed', traceback.format_exc())
-                self.status.set('暂时无法打开这条原文，可打开 HTML 日报查看；已有结果保留。')
+                self._log('open_reply_failed' if reply else 'open_selected_failed', traceback.format_exc())
+                self.status.set('暂时无法打开这条' + ('回应' if reply else '原文') + '，可打开 HTML 日报查看；已有结果保留。')
 
         def open_result(self, key):
             if self.result:
@@ -1777,7 +1806,7 @@ def main(client, argv=None, *, standalone=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     if args.capabilities:
-        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True, 'filteredChecklist': True, 'followupPagination': True, 'requestRoundMatching': True, 'progressFilters': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
+        print(json_text({'schemaVersion': 1, 'role': 'daily_report', 'client': client, 'version': DAILY_REPORT_VERSION, 'conversationModes': ['group', 'direct'], 'input': 'human_reviewed_exports', 'readsLiveClient': False, 'callsModelAPI': False, 'standalone': standalone, 'requiresRepository': not standalone, 'desktopUI': True, 'scopeNotices': True, 'contentGapReview': True, 'followupChecklist': True, 'replyPreview': True, 'conversationModeFilter': True, 'filteredChecklist': True, 'followupPagination': True, 'requestRoundMatching': True, 'progressFilters': True, 'signalPolarity': True, 'replyEvidenceNavigation': True, 'requiresPythonInstallation': not getattr(sys, 'frozen', False)}))
         return 0
     if args.desktop or args.check_desktop or (not arguments):
         return run_daily_desktop(client, args, DAILY_REPORT_VERSION)

@@ -17,6 +17,7 @@ from test_daily_reports import DAY, formal_export, message
 from test_daily_history import unicode_export
 from test_daily_business import GapCards, followup_export, gap_export
 from test_daily_conversations import conversation_export
+from test_daily_signals import signal_export
 
 
 def clean_environment():
@@ -115,6 +116,19 @@ def assert_conversation_report(test, process, output):
     test.assertEqual(clues['请取消订单']['state'], 'needs_response')
     cards = GapCards((output / 'report.html').read_text(encoding='utf-8')).clues
     test.assertEqual(sorted(card['data-progress'] for card in cards), ['deferred', 'responded', 'signal', 'unanswered', 'unanswered'])
+
+
+def assert_signal_report(test, process, output):
+    test.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+    report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+    clues = {item['text']: item for item in report['followups']}
+    test.assertEqual({text: item['state'] for text, item in clues.items()},
+        {'请确认报价': 'needs_response', '请处理发票': 'responded', '请安排发货': 'completion_signal',
+         '请提供方案': 'completion_signal', '请确认验收进度': 'deferred', '请确认订单': 'withdrawal_signal'})
+    test.assertIsNone(clues['请确认报价']['replyEvidenceId'])
+    test.assertEqual(clues['请处理发票']['reply']['text'], '已经处理了吗？')
+    cards = GapCards((output / 'report.html').read_text(encoding='utf-8')).clues
+    test.assertEqual(sorted(card['data-progress'] for card in cards), ['deferred', 'responded', 'signal', 'signal', 'signal', 'unanswered'])
 
 
 class StandaloneDistributionTests(unittest.TestCase):
@@ -242,6 +256,16 @@ class StandaloneDistributionTests(unittest.TestCase):
                     result = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
                                           '--export-root', source, '--output', output], cwd=self.base)
                     assert_conversation_report(self, result, output)
+
+    def test_single_files_preserve_negation_questions_and_affirmative_signal_clauses(self):
+        for client in ('wechat', 'wecom'):
+            for mode in ('direct', 'group'):
+                with self.subTest(client=client, mode=mode):
+                    source = signal_export(self.base, client + mode, client=client, mode=mode)
+                    output = self.base / (client + mode + '-signals')
+                    process = run_process([sys.executable, '-I', '-S', self.script(client), '--date', DAY,
+                                           '--export-root', source, '--output', output], cwd=self.base)
+                    assert_signal_report(self, process, output)
 
     def test_tracked_single_files_match_the_maintained_generation(self):
         for client in ('wechat', 'wecom'):
@@ -453,6 +477,20 @@ class WindowsDeliveryTests(unittest.TestCase):
                         result = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
                                               '--export-root', source, '--output', output], cwd=self.base)
                         assert_conversation_report(self, result, output)
+
+
+    def test_native_signal_polarity_in_both_clients_modes_and_delivery_formats(self):
+        for client in ('wechat', 'wecom'):
+            for mode in ('direct', 'group'):
+                source = signal_export(self.base, client + mode + '-signals', client=client, mode=mode)
+                for kind in ('portable', 'skill'):
+                    with self.subTest(client=client, mode=mode, delivery=kind):
+                        directory = self.packages[client, kind]
+                        runtime = json.loads((directory / 'runtime.json').read_text(encoding='utf-8'))
+                        output = self.base / (client + mode + kind + '-signals')
+                        process = run_process([directory / runtime['exeRelativePath'], '--date', DAY,
+                                               '--export-root', source, '--output', output], cwd=self.base)
+                        assert_signal_report(self, process, output)
 
 
 if __name__ == '__main__':

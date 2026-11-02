@@ -30,6 +30,7 @@ TARGETS = (
     'test_daily_history',
     'test_daily_business',
     'test_daily_conversations',
+    'test_daily_signals',
 )
 
 

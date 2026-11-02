@@ -43,7 +43,8 @@ def verify_binary(path, client):
         raise ValueError('The daily-report executable did not return capabilities') from error
     expected = {'client': client, 'version': DAILY_REPORT_VERSION, 'role': 'daily_report',
                 'standalone': True, 'requiresRepository': False, 'requiresPythonInstallation': False,
-                'readsLiveClient': False, 'callsModelAPI': False}
+                'readsLiveClient': False, 'callsModelAPI': False,
+                'signalPolarity': True, 'replyEvidenceNavigation': True}
     if result.returncode or any(capabilities.get(key) != value for key, value in expected.items()):
         raise ValueError('The executable version, client or portability does not match')
     return capabilities
@@ -78,7 +79,7 @@ def usage(client):
             '完成后可搜索、筛选线索，选中后点“查看这条原文”直接核对依据，也可打开 HTML 或复制结果路径。'
             '不要在压缩包预览窗口中直接启动。\n\n'
             '线索支持私聊／群聊与进展组合筛选，可搜索完整请求及已关联回应；范围下拉可选“尚未回应、已有回应待核对、暂缓仍待跟进”。'
-            '选中后“复制这条线索”，包含完整请求、回应和待核对提示。'
+            '选中后“复制这条线索”，包含完整请求、回应和待核对提示；“查看这条回应”直接打开已关联回应的原文，没有回应时禁用。'
             '“打开跟进清单”或 HTML 中“下载全部待跟进清单”可取得 followups.txt，包含全部候选，'
             '按本人相关、对象待确认、处理或取消待核对分组。桌面每页 500 条，可翻页浏览；复制或保存筛选清单覆盖全部匹配项，HTML 可“下载当前筛选”，均标明条件、数量和核对提示。桌面保存使用新文件名，不覆盖已有文件；无匹配、取消和失败不改变当前筛选。\n\n'
             '所选材料未找到当日消息时，会提醒核对日期和导出范围；不能据此认定当天没有消息。'
@@ -103,7 +104,7 @@ def usage(client):
             '群内他人请求不作为本人待办，身份或目标不足时保留未知。'
             '引用、转发和附件保留原归属与缺口，不估算历史未读。\n\n'
             '引用关联支持数字与字符串编号，以已关联的本地来源为准；同一秒的回复只有明确引用时才关联。'
-            '私聊普通回复可关联唯一尚未回应的新请求，支持跨日多轮；多条未回应请求及群聊普通回复不猜归属。取消订单的操作请求保留为候选，取消／完成依据不会被普通确认覆盖。已有回应和处理信号仍需人工核对。异常的群内点名目标保留待确认，不按字符串包含关系推断本人待办。\n\n'
+            '私聊普通回复可关联唯一尚未回应的新请求，支持跨日多轮；多条未回应请求及群聊普通回复不猜归属。取消订单的操作请求保留为候选，取消／完成依据不会被普通确认覆盖。进展判断结合句内否定、问句和假设：“不要取消”不算已经取消，“已经处理了吗”不算已处理；明确未完成仍待跟进。已有回应和处理信号仍需人工核对。异常的群内点名目标保留待确认，不按字符串包含关系推断本人待办。\n\n'
             '成功退出码 0，JSON 含 ok=true 及 HTML/JSON/证据路径；失败退出码 2。'
             '持续文件占用也返回明确失败；程序已做有限重试，释放占用或更换新的输出位置后再运行，不清空材料或复核记录。'
             '打开 report.html 查看搜索、筛选及原文依据；主界面只展示业务重点，技术 ID、来源摘要及关联记录保存在 diagnostics.jsonl。'

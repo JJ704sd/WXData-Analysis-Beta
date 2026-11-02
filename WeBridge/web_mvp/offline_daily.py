@@ -35,10 +35,14 @@ def _progress(callback, phase, **details):
 
 REQUEST = re.compile(r'请(?:您|你|大家|各位)?(?:尽快|及时|务必|协助|帮忙|先)?(?:问|帮|确认|回复|提供|处理|安排|发|查|看|跟进)|麻烦|能否|是否|可以吗|什么时候|多少钱|进展(?:如何|怎么样)|跟进(?:一下|下)|[?？]', re.I)
 CANCEL_REQUEST = re.compile(r'(?:请|麻烦|能否|帮我).{0,8}取消|取消.{0,16}(?:吗|[?？])')
-DEFER = re.compile(r'稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)')
+DEFER = re.compile(r'稍后|晚[点些]|回头|稍等|待(?:确认|核实)|(?:明天|下周).{0,12}(?:回复|处理|再|确认|发)|还(?:没|未)|(?:尚未|暂未|未能|没有|没能|未|没)(?:处理|完成|解决|确认|回复|发送|发出|验收)')
 COMPLETION = re.compile(r'已(?:经)?(?:处理|完成|发送|发出|解决|确认|回复)|问题.{0,4}解决')
 NEGATION = re.compile(r'没有|未(?:能|完成|处理|解决|确认)|还没|尚未|暂未|不能|无法|别|不要')
 WITHDRAWAL = re.compile(r'不用了|不需要了|取消(?:这|该|本次|请求|需求|订单)|先不(?:用|处理|做)|暂缓')
+SIGNAL_CLAUSES = re.compile(r'([^，,。.!！;；\n?？]+)([，,。.!！;；\n?？]|$)')
+SIGNAL_NEGATED_PREFIX = re.compile(r'(?:不要|不用|不必|不能|不会|不是|不需要|并非|无需|别|勿|没有|还没有|还没|没能|未能|没|尚未|并未|未)(?:再|去|进行|直接|擅自|随意|真的|已经|帮我|说|是|就|说过|说要|说会)?\s*$')
+SIGNAL_CONDITION = re.compile(r'如果|假如|要是|是否|能否|有没有|是不是|会不会')
+SIGNAL_QUESTION_SUFFIX = re.compile(r'吗|么|与否|的话|以后|之后|之前|(?:没(?:有)?|否)\s*$')
 URGENCY = re.compile(r'紧急|尽快|催|截止|最后期限|逾期|投诉|索赔')
 TOPICS = {
     '报价与价格': ('报价', '价格', '费用', 'quotation'),
@@ -307,6 +311,23 @@ def _quote_ids(row):
     return {value for value in (identifier(quote.get('messageId')), identifier(nested)) if value is not None}
 
 
+def _has_signal(body, pattern, *, completion=False):
+    """Interpret a rule match within its clause, retaining uncertain wording."""
+    for clause, boundary in SIGNAL_CLAUSES.findall(body):
+        if boundary in {'?', '？'}:
+            continue
+        for match in pattern.finditer(clause):
+            prefix, suffix = clause[:match.start()], clause[match.end():]
+            if SIGNAL_NEGATED_PREFIX.search(prefix) or SIGNAL_CONDITION.search(prefix + match.group()):
+                continue
+            if SIGNAL_QUESTION_SUFFIX.search(suffix):
+                continue
+            if completion and NEGATION.search(match.group()):
+                continue
+            return True
+    return False
+
+
 def _followups(records, my_names, *, progress=None, cancel=None):
     groups = defaultdict(list)
     for index, row in enumerate(records):
@@ -322,7 +343,7 @@ def _followups(records, my_names, *, progress=None, cancel=None):
             if processed % 256 == 0:
                 _checkpoint(cancel)
             body = _primary(row)
-            withdrawn = bool(WITHDRAWAL.search(body))
+            withdrawn = _has_signal(body, WITHDRAWAL)
             cancel_request = bool(CANCEL_REQUEST.search(body))
             is_request = row['direction'] != 'outgoing' and (REQUEST.search(body) or cancel_request) and (not withdrawn or cancel_request)
             if is_request:
@@ -379,13 +400,13 @@ def _followups(records, my_names, *, progress=None, cancel=None):
                 if target != 'self':
                     continue
                 if later['direction'] == 'outgoing':
-                    next_state = 'deferred' if DEFER.search(body) else 'completion_signal' if COMPLETION.search(body) and not NEGATION.search(body) else 'responded'
-                    if state == 'withdrawal_signal' or (state == 'completion_signal' and next_state == 'responded' and not NEGATION.search(body)):
+                    next_state = 'deferred' if _has_signal(body, DEFER) else 'completion_signal' if _has_signal(body, COMPLETION, completion=True) else 'responded'
+                    if state == 'withdrawal_signal' or (state == 'completion_signal' and next_state == 'responded'):
                         continue
                     reply = later
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
                     state = next_state
-                elif later['senderId'] == request['senderId'] and WITHDRAWAL.search(body):
+                elif later['senderId'] == request['senderId'] and _has_signal(body, WITHDRAWAL):
                     reply, state = later, 'withdrawal_signal'
                     reply_basis = 'explicit_quote' if explicit else 'direct_chronology'
             score = (3 if basis == 'structured_mention' else 2 if target == 'self' else 0) + (2 if URGENCY.search(request['text']) else 0)

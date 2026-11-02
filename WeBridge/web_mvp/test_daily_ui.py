@@ -257,6 +257,55 @@ class DailyDesktopTests(unittest.TestCase):
         app.clear_filters()
         self.assertEqual(len(app.followup_tree.get_children()), 6)
 
+    def test_reply_original_navigation_requires_a_selected_linked_response(self):
+        from test_daily_signals import signal_export
+        app = self.create_app(client='wecom')
+        source = signal_export(self.base, 'reply-navigation', client='wecom', mode='group')
+        result = build_daily_report([source], client='wecom', day=DAY, output=self.base / 'reply-navigation-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        self.assertIn('disabled', app.open_reply_button.state())
+        app.search.set('请处理发票')
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        row = app.followups[int(selected)]
+        self.assertNotIn('disabled', app.open_reply_button.state())
+        app.open_reply_button.invoke()
+        self.assertTrue(self.opened[-1].endswith('#' + row['replyEvidenceId']))
+        app.open_selected()
+        self.assertTrue(self.opened[-1].endswith('#' + row['evidenceId']))
+        app.search.set('请确认报价')
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        self.assertIn('disabled', app.open_reply_button.state())
+        count = len(self.opened)
+        app.open_selected(reply=True)
+        self.assertEqual(len(self.opened), count)
+        app.search.set('没有匹配的线索')
+        self.assertIn('disabled', app.open_reply_button.state())
+
+    def test_reply_navigation_failure_preserves_selection_filters_and_report(self):
+        app = self.create_app()
+        source = followup_export(self.base, 'reply-failure')
+        result = build_daily_report([source], client='wechat', day=DAY, output=self.base / 'reply-failure-report')
+        app.present_result(result, json.loads(Path(result['jsonFile']).read_text(encoding='utf-8')))
+        app.search.set('等待确认独有词')
+        selected = app.followup_tree.get_children()[0]
+        app.followup_tree.selection_set(selected)
+        app.show_detail()
+        detail = app.detail.get('1.0', 'end')
+        before = Path(result['jsonFile']).read_bytes()
+        def fail(_target):
+            raise OSError('synthetic browser failure')
+        app.opener = fail
+        app.open_reply_button.invoke()
+        self.assertIn('回应', app.status.get())
+        self.assertEqual(app.followup_tree.selection(), (selected,))
+        self.assertEqual(app.search.get(), '等待确认独有词')
+        self.assertEqual(app.detail.get('1.0', 'end'), detail)
+        self.assertEqual(Path(result['jsonFile']).read_bytes(), before)
+
     def test_progress_filters_and_saved_scope_keep_corrected_conversation_states(self):
         from test_daily_conversations import conversation_export
         app = self.create_app(client='wecom')
@@ -460,7 +509,8 @@ class DailyDesktopTests(unittest.TestCase):
         app.tabs.select(app.results)
         self.root.update()
         for widget in (app.search_entry, app.filter_box, app.mode_box, app.copy_selected_button, app.followup_tree, app.detail,
-                       app.copy_filtered_button, app.save_filtered_button, app.previous_page_button, app.next_page_button):
+                       app.copy_filtered_button, app.save_filtered_button, app.previous_page_button, app.next_page_button,
+                       app.open_reply_button):
             self.assertGreater(widget.winfo_height(), 20)
             self.assertLessEqual(widget.winfo_rootx() + widget.winfo_width(), app.results.winfo_rootx() + app.results.winfo_width())
             self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(), app.results.winfo_rooty() + app.results.winfo_height())
