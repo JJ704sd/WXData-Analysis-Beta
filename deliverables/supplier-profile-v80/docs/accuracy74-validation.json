@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v74 / 1.51.8",
+    "private": "1.20.6",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "focused": {
+      "schemaVersion": 1,
+      "date": "2026-10-28",
+      "targets": [
+        "test_wecom_links74",
+        "test_reader_notice74",
+        "test_reading_delivery74",
+        "test_forward_semantics58",
+        "test_wecom_text_gaps73"
+      ],
+      "testsRun": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 3.66,
+      "ok": true,
+      "usesSyntheticData": true,
+      "realAccountValidation": false,
+      "compiledBinaryValidation": false,
+      "python": "3.14.6",
+      "platform": "win32",
+      "failedTests": []
+    },
+    "packaging": {
+      "schemaVersion": 1,
+      "date": "2026-10-28",
+      "targets": [
+        "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests"
+      ],
+      "testsRun": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.25,
+      "ok": true,
+      "usesSyntheticData": true,
+      "realAccountValidation": false,
+      "compiledBinaryValidation": false,
+      "python": "3.14.6",
+      "platform": "win32",
+      "failedTests": []
+    },
+    "exportControl": {
+      "command": "python -m unittest test_four_exports64.FourExports64Tests.test_material_gaps_and_historical_failures_across_four_exports",
+      "testsRun": 1,
+      "fourProductSubcases": 4,
+      "ok": true,
+      "seconds": 18.565,
+      "note": "Earlier ad hoc execution reported empty fixture document text. The published v73 control and current v74 control both passed with the configured dependencies; no PDF code change or causal repair is claimed."
+    },
+    "uniqueChecksPassed": 31,
+    "runtimeIdentity": {
+      "ok": true,
+      "scannedFiles": 107,
+      "issues": []
+    },
+    "pythonSyntax": {
+      "ok": true,
+      "changedFiles": 10
+    },
+    "markdownLinks": {
+      "ok": true,
+      "checked": 60
+    }
+  },
+  "compiledBinaryValidation": true,
+  "packageValidation": true,
+  "compiledChecks": {
+    "schemaVersion": 1,
+    "date": "2026-10-28",
+    "ok": true,
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.8",
+        "archive": "WeChat-Archive-Skill-1.51.8-Windows-x64.zip",
+        "sha256": "cc91deff384e0eeac69242f862491591a7def42d2ad47ed311fdc2e440392474",
+        "desktopExeSha256": "794f84aa02a399ceccff2d335829e0d368fb40c8caac339ee977e7c57b29c308",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.8",
+        "archive": "WeCom-Archive-Skill-1.51.8-Windows-x64.zip",
+        "sha256": "55fa62c0eac21e6b7203458757e14ab06f3955a1d2e3b019bf75311dcc8879fd",
+        "desktopExeSha256": "794f84aa02a399ceccff2d335829e0d368fb40c8caac339ee977e7c57b29c308",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.6",
+        "archive": "private/local-wechat-private-analysis-1.20.6-windows-x64.zip",
+        "sha256": "7cf177271c8e08420e2f14d932369ebf2e8bde41752828f6909a991b3218df31",
+        "desktopExeSha256": "794f84aa02a399ceccff2d335829e0d368fb40c8caac339ee977e7c57b29c308",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.6",
+        "archive": "private/local-wecom-private-analysis-1.20.6-windows-x64.zip",
+        "sha256": "a99f1958dff29b78c24b511471ae722ec2c6167cf602a0e8bce8ccdf4eacba8b",
+        "desktopExeSha256": "794f84aa02a399ceccff2d335829e0d368fb40c8caac339ee977e7c57b29c308",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      }
+    ],
+    "usesSyntheticData": true,
+    "compiledBinaryValidation": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false
+  },
+  "validationBoundary": {
+    "usesSyntheticData": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false,
+    "note": "No new original-host logs were supplied for v74. Text/link fixes are based on reproducible synthetic cases; the original v69 WinError 5 log findings remain unchanged."
+  },
+  "python": "3.14.6",
+  "platform": "win32"
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "targets": [
+    "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests"
+  ],
+  "testsRun": 1,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 0.16,
+  "ok": true,
+  "usesSyntheticData": true,
+  "realAccountValidation": false,
+  "compiledBinaryValidation": false,
+  "python": "3.14.6",
+  "platform": "win32",
+  "failedTests": []
+}

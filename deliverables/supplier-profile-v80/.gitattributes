@@ -1,0 +1,8 @@
+* text=auto eol=lf
+# Preserve the six historical source blobs that were committed with CRLF.
+WeBridge/.gitignore -text whitespace=cr-at-eol
+WeBridge/Start-WeCom-Source.cmd -text whitespace=cr-at-eol
+WeBridge/docs/local-chat/个微聊天记录解析工具说明.md -text whitespace=cr-at-eol
+WeBridge/docs/local-chat/企微运行账号识别修复-v67.md -text whitespace=cr-at-eol
+WeBridge/requirements-source.txt -text whitespace=cr-at-eol
+WeBridge/web_mvp/test_acquire_database_keys.py -text whitespace=cr-at-eol

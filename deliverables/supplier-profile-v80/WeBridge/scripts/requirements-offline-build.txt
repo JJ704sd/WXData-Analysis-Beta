@@ -1,0 +1,9 @@
+# Used only on the developer's build machine, not on the recipient's machine.
+pyinstaller==6.22.3
+# Bundled native image viewing; recipients do not install this package.
+Pillow==12.3.0
+# Bundled attachment text readers. Recipients do not install these packages.
+pypdf==6.16.1
+xlrd==2.0.2
+olefile==0.47
+msoffcrypto-tool==6.0.0

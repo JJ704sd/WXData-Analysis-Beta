@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v73 / 1.51.7",
+    "private": "1.20.5",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "evidence": [
+      "WeBridge/.runtime/accuracy73-checks.json",
+      "WeBridge/.runtime/accuracy73-packaging-check.json"
+    ],
+    "initialRun": {
+      "testsRun": 23,
+      "passedChecks": 22,
+      "erroringChecks": 1,
+      "erroringSubcases": 2,
+      "reason": "新增指南当时尚未生成，打包检查的两个客户端 subcases 报错。"
+    },
+    "packagingRerun": {
+      "testsRun": 1,
+      "passedChecks": 1,
+      "failures": 0,
+      "errors": 0,
+      "evidence": "WeBridge/.runtime/accuracy73-packaging-check.json"
+    },
+    "uniqueChecksPassed": 23,
+    "totalTestExecutions": 24,
+    "unresolvedFailures": 0,
+    "unresolvedErrors": 0,
+    "runtimeIdentity": {
+      "ok": true,
+      "scannedFiles": 107
+    }
+  },
+  "compiledBinaryValidation": true,
+  "packageValidation": true,
+  "validationBoundary": {
+    "usesSyntheticData": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false,
+    "note": "验证范围以该记录及交付清单为准。"
+  },
+  "python": "3.14.6",
+  "platform": "win32",
+  "compiledChecks": {
+    "evidence": "WeBridge/.runtime/accuracy73-compiled.json",
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.7",
+        "archive": "WeChat-Archive-Skill-1.51.7-Windows-x64.zip",
+        "sha256": "676128d6a16dfa535f671713cd4012e5a32c99fcec042db30d290f717a064513",
+        "desktopExeSha256": "f4b4ce9bc4888fc41905d1a152ee0d55bb0a047bbfed127940c2cedbe197c5eb",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.7",
+        "archive": "WeCom-Archive-Skill-1.51.7-Windows-x64.zip",
+        "sha256": "9bf3b0983729fa9a75498e34744a1a8e4b21e6d0fbf04c646c5d36285e79a8da",
+        "desktopExeSha256": "f4b4ce9bc4888fc41905d1a152ee0d55bb0a047bbfed127940c2cedbe197c5eb",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "wecomTextGapAndEmotionFallback": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.5",
+        "archive": "private/local-wechat-private-analysis-1.20.5-windows-x64.zip",
+        "sha256": "2f1940c1a644d7c2548740ea218fa61d53f3f8b8789ac5812a611a37f3fbfa0c",
+        "desktopExeSha256": "f4b4ce9bc4888fc41905d1a152ee0d55bb0a047bbfed127940c2cedbe197c5eb",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.5",
+        "archive": "private/local-wecom-private-analysis-1.20.5-windows-x64.zip",
+        "sha256": "3c071dd7baf00ec1e503d7de19dbbb3c926777b03f9246ccff72585396698a0a",
+        "desktopExeSha256": "f4b4ce9bc4888fc41905d1a152ee0d55bb0a047bbfed127940c2cedbe197c5eb",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "wecomTextGapAndEmotionFallback": true
+      }
+    ],
+    "nativeCases": 4,
+    "wecomTextGapAndEmotionCases": 2,
+    "zipCRCAndManifestHashes": true,
+    "chineseAndSpacePath": true,
+    "pythonRemovedFromPath": true,
+    "humanReviewStillRequired": true
+  }
+}

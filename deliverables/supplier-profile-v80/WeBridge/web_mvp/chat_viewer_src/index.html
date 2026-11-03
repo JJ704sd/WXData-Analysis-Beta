@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>会话档案</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11.2c0 4.1-3.6 7.4-8 7.4-1 0-2-.2-2.9-.5L5 20l.8-3.7C4.7 15 4 13.2 4 11.2c0-4.1 3.6-7.4 8-7.4s8 3.3 8 7.4Z"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.8 19v-1.1c0-2.5 2.3-4.3 5.2-4.3s5.2 1.8 5.2 4.3V19M15.4 5.5a3 3 0 0 1 0 5.7M16.6 13.8c2.1.4 3.6 1.9 3.6 4V19"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.4 19v-.7c0-3.2 2.9-5.5 6.6-5.5s6.6 2.3 6.6 5.5v.7Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.5 15.5 4.2 4.2"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v8A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5Z"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 10.5v5M12 7.2h.01"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="9" r="1.3"/><path d="m4.5 17 5-5 3.3 3 2.3-2.2 4.4 4.2"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6zM14 3.5v4h4M9 12h6M9 15.5h6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10" width="13" height="10" rx="2"/><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  </svg>
+
+  <div class="app-shell" id="app">
+    <aside class="rail" aria-label="导航">
+      <div class="rail-identity"><div class="brand-mark" aria-label="会话档案"><span></span><span></span><span></span><span></span></div><div class="identity-copy"><strong>会话档案</strong><span>本地浏览</span></div></div>
+      <div class="rail-items">
+        <button class="rail-button active" data-mode="all" title="全部会话" aria-label="全部会话"><svg><use href="#i-chat"/></svg><span class="rail-label">消息</span></button>
+        <div class="rail-section">分组</div>
+        <button class="rail-button" data-mode="direct" title="私聊" aria-label="私聊"><svg><use href="#i-person"/></svg><span class="rail-label">单聊</span></button>
+        <button class="rail-button" data-mode="group" title="群聊" aria-label="群聊"><svg><use href="#i-people"/></svg><span class="rail-label">群聊</span></button>
+      </div>
+      <div class="rail-bottom"><span class="rail-status" title="仅在本机读取"><svg><use href="#i-lock"/></svg></span><span>本地</span></div>
+    </aside>
+
+    <section class="conversation-panel" aria-label="会话列表">
+      <div class="panel-heading">
+        <div><div class="product-kicker">CHAT ARCHIVE</div><h1>会话档案<span class="heading-dot"></span></h1></div>
+        <button id="add-source" class="icon-button add-source" title="接入导出资料" aria-label="接入导出资料"><svg><use href="#i-plus"/></svg></button>
+      </div>
+      <div class="search-wrap"><svg><use href="#i-search"/></svg><input id="conversation-search" type="search" placeholder="搜索会话名称" autocomplete="off" aria-label="搜索会话名称"><kbd>⌕</kbd></div>
+      <button class="global-entry" id="open-global-search" type="button"><svg><use href="#i-search"/></svg><span>全局搜索</span><small>跨会话查找记录</small><svg><use href="#i-chevron"/></svg></button>
+      <div class="filters" role="tablist" aria-label="会话类型">
+        <button class="filter active" data-mode="all" role="tab" aria-selected="true">全部 <span id="count-all"></span></button>
+        <button class="filter" data-mode="group" role="tab" aria-selected="false">群聊 <span id="count-group"></span></button>
+        <button class="filter" data-mode="direct" role="tab" aria-selected="false">私聊 <span id="count-direct"></span></button>
+      </div>
+      <div class="list-caption"><span id="list-caption">全部会话</span><div class="caption-filters"><label class="source-select"><span class="sr-only">筛选平台</span><select id="client-filter"><option value="">全部平台</option><option value="wecom">企微</option><option value="wechat">个微</option><option value="unknown">待确认</option></select><svg><use href="#i-chevron-down"/></svg></label><label class="source-select"><span class="sr-only">筛选资料来源</span><select id="source-filter"><option value="">全部来源</option></select><svg><use href="#i-chevron-down"/></svg></label></div></div>
+      <div id="conversation-list" class="conversation-list" aria-live="polite"><div class="list-loading">正在读取本地资料…</div></div>
+      <div class="panel-footer"><span class="online-dot"></span><span>本地资料 · 只读浏览</span><button id="add-source-footer">接入资料 <span>＋</span></button></div>
+    </section>
+
+    <main class="chat-panel" id="chat-panel">
+      <header class="chat-header">
+        <button class="icon-button mobile-back" id="mobile-back" aria-label="返回会话列表"><svg><use href="#i-arrow-left"/></svg></button>
+        <div class="header-avatar" id="header-avatar"></div>
+        <div class="chat-title"><h2 id="chat-name">选择一个会话</h2><div class="chat-subtitle" id="chat-subtitle">从左侧打开本地导出的聊天记录</div></div>
+        <div class="header-actions"><button class="icon-button" id="toggle-message-search" title="查找聊天记录" aria-label="查找聊天记录" disabled><svg><use href="#i-search"/></svg></button><button class="icon-button details-button" id="toggle-details" title="会话信息" aria-label="会话信息" disabled><svg><use href="#i-info"/></svg></button></div>
+      </header>
+      <div class="chat-scroll" id="chat-scroll"><div class="empty-welcome"><div class="empty-icon"><svg><use href="#i-chat"/></svg></div><h3>查看一段会话</h3><p>选择左侧会话，按原始顺序浏览本地导出的记录。</p></div></div>
+      <div class="archive-bar"><svg><use href="#i-lock"/></svg><div><strong id="archive-mode">本地归档视图</strong><span id="archive-description">这里展示已导出的记录，无法发送消息</span></div><span class="archive-bar-right">READ ONLY</span></div>
+    </main>
+
+    <aside class="details-panel" id="details-panel" aria-label="会话信息">
+      <div class="details-heading"><h2>会话信息</h2><button class="icon-button details-close" id="details-close" aria-label="关闭会话信息"><svg><use href="#i-close"/></svg></button></div>
+      <div id="details-content" class="details-content"><p class="muted">选择会话后查看资料信息。</p></div>
+      <div class="details-footer"><svg><use href="#i-lock"/></svg><span>数据留在本机</span></div>
+    </aside>
+    <aside class="history-panel" id="history-panel" aria-label="查找聊天记录" hidden>
+      <div class="history-heading"><h2>查找聊天记录</h2><button class="icon-button" id="close-history-search" aria-label="关闭聊天记录搜索"><svg><use href="#i-close"/></svg></button></div>
+      <div class="history-tabs" role="tablist" aria-label="聊天记录类型">
+        <button class="history-tab active" type="button" role="tab" aria-selected="true" data-category="all">全部</button>
+        <button class="history-tab" type="button" role="tab" aria-selected="false" data-category="file">文件</button>
+        <button class="history-tab" type="button" role="tab" aria-selected="false" data-category="media">图片与视频</button>
+        <button class="history-tab" type="button" role="tab" aria-selected="false" data-category="link">链接</button>
+        <button class="history-tab" type="button" role="tab" aria-selected="false" data-category="miniprogram">小程序</button>
+      </div>
+      <form class="history-search-form" id="history-search-form"><svg><use href="#i-search"/></svg><input id="history-query" type="search" maxlength="200" placeholder="搜索聊天记录" aria-label="搜索聊天记录" autocomplete="off"><button type="submit">搜索</button></form>
+      <div class="history-filters">
+        <details class="history-filter" id="sender-filter"><summary>发送人<svg><use href="#i-chevron-down"/></svg></summary><div class="filter-popover"><label for="history-sender">按发送人名称筛选</label><input id="history-sender" type="search" list="sender-suggestions" maxlength="200" placeholder="输入名称"><datalist id="sender-suggestions"></datalist><p>输入名称时按显示名称匹配。</p><div><button type="button" data-clear="sender">清除</button><button type="button" data-apply="sender">应用</button></div></div></details>
+        <details class="history-filter" id="date-filter"><summary>日期<svg><use href="#i-chevron-down"/></svg></summary><div class="filter-popover date-popover"><label for="history-from">开始日期</label><input id="history-from" type="date"><label for="history-to">结束日期</label><input id="history-to" type="date"><div><button type="button" data-clear="date">清除</button><button type="button" data-apply="date">应用</button></div></div></details>
+        <button type="button" class="clear-filters" id="clear-history-filters" hidden>清除筛选</button>
+      </div>
+      <div class="history-caption" id="history-caption">当前会话的本地聊天记录</div>
+      <div class="history-results" id="history-results" aria-live="polite"></div>
+    </aside>
+    <aside class="global-panel" id="global-panel" aria-label="全局搜索" hidden>
+      <div class="global-heading"><div><h2>全局搜索</h2><p>查找群聊和私聊中的记录</p></div><button class="icon-button" id="close-global-search" aria-label="关闭全局搜索"><svg><use href="#i-close"/></svg></button></div>
+      <form class="global-search-form" id="global-search-form"><svg><use href="#i-search"/></svg><input id="global-query" type="search" maxlength="200" placeholder="搜索全部聊天记录" aria-label="搜索全部聊天记录" autocomplete="off"><button type="submit">搜索</button></form>
+      <div class="global-filters"><label><span class="sr-only">会话范围</span><select id="global-scope"><option value="all">全部会话</option><option value="group">群聊</option><option value="direct">私聊</option></select></label><label><span class="sr-only">平台</span><select id="global-client"><option value="all">全部平台</option><option value="wecom">企微</option><option value="wechat">个微</option><option value="unknown">待确认</option></select></label><label><span class="sr-only">资料来源</span><select id="global-source"><option value="">全部资料</option></select></label><details class="global-more" id="global-more"><summary>更多筛选<svg><use href="#i-chevron-down"/></svg></summary><div class="global-filter-popover"><label for="global-category">记录类型</label><select id="global-category"><option value="all">全部类型</option><option value="file">文件</option><option value="media">图片与视频</option><option value="link">链接</option><option value="miniprogram">小程序</option></select><label for="global-sender">发送人名称</label><input id="global-sender" type="search" maxlength="200" placeholder="输入发送人名称"><div class="global-date-fields"><label>开始日期<input id="global-from" type="date"></label><label>结束日期<input id="global-to" type="date"></label></div><div class="global-filter-actions"><button id="global-clear-filters" type="button">清除</button><button id="global-apply-filters" type="button">应用</button></div></div></details></div>
+      <div class="global-index" id="global-index"><div class="global-index-top"><span id="global-index-text">准备本地搜索</span><button type="button" id="global-retry" hidden>重试</button></div><progress id="global-index-progress" max="1" value="0"></progress></div>
+      <div class="global-caption" id="global-caption">输入关键词，搜索已准备的会话</div>
+      <div class="global-results" id="global-results" aria-live="polite"><div class="global-empty">输入关键词后，可查找群聊和私聊中的记录。</div></div>
+      <div class="global-pagination" id="global-pagination" hidden><button id="global-previous" type="button">上一页</button><span id="global-page-label"></span><button id="global-next" type="button">下一页</button></div>
+    </aside>
+  </div>
+
+  <dialog id="source-dialog" class="dialog source-dialog">
+    <form id="source-form">
+      <div class="dialog-heading"><div><span class="dialog-kicker">添加本地资料</span><h2>接入会话导出</h2></div><button type="button" class="icon-button dialog-close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
+      <p>粘贴 WeBridge 导出文件夹或 ZIP 的完整路径。可接入单个会话，也可接入包含多个会话的目录。</p>
+      <label for="source-path">文件夹或 ZIP 路径</label><input id="source-path" name="path" placeholder="例如 D:\导出资料\聊天记录.zip" autocomplete="off" required>
+      <div class="form-hint"><svg><use href="#i-info"/></svg><span>每个会话需包含 <b>manifest.json</b> 和 <b>messages.jsonl</b>。支持企微、个微的群聊和私聊，资料保持原样。</span></div>
+      <p class="form-error" id="source-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button-plain dialog-cancel">取消</button><button type="submit" class="button-primary" id="source-submit">接入资料</button></div>
+    </form>
+  </dialog>
+  <dialog id="record-dialog" class="dialog record-dialog"><div class="dialog-heading"><div><span class="dialog-kicker">来源记录</span><h2>原始消息字段</h2></div><button type="button" class="icon-button dialog-close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><p>内容来自当前会话的 messages.jsonl。</p><pre id="record-content"></pre></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

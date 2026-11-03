@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v78 / 1.51.12",
+    "private": "1.20.10",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "uniqueChecksPassed": 5,
+    "reports": {
+      "presets78-calendar.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period_presets78.PeriodPresetTests.test_calendar_ranges_include_today_and_handle_year_and_leap_boundaries"
+        ],
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.0,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "presets78-ui.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period_presets78.PeriodPresetTests.test_native_preset_selection_keeps_custom_edits_and_small_window_usable",
+          "test_period77.PeriodDialogTests.test_small_dialog_scrolls_and_submits_exact_ids_and_times"
+        ],
+        "testsRun": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.89,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "presets78-packaging-source.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_private_chat_distribution.PrivateChatDistributionTests.test_builds_two_bound_allowlisted_packages_from_explicit_exes",
+          "test_daily_distribution.StandaloneDistributionTests.test_tracked_single_files_match_the_maintained_generation"
+        ],
+        "testsRun": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.01,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      }
+    }
+  },
+  "compiledDelivery": {
+    "ok": true,
+    "release": "v78",
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.12",
+        "archive": "WeChat-Archive-Skill-1.51.12-Windows-x64.zip",
+        "sha256": "d6864f0e398f88ce80599fc8b90d774e15ee708f06ac7ca5ac6255e1cf40f939",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true,
+        "compiledPresetChoicesPresent": true
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.12",
+        "archive": "WeCom-Archive-Skill-1.51.12-Windows-x64.zip",
+        "sha256": "f5eb8ec9e0a25e8b51a8dc39b386280772a55ab7afc71f64033a379e87602f0a",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true,
+        "compiledPresetChoicesPresent": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.10",
+        "archive": "private/local-wechat-private-analysis-1.20.10-windows-x64.zip",
+        "sha256": "566b628ee1e44478a15b8da5948f1a9ba94f451ba40b1a94bc32f4ee06ccd866",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true,
+        "compiledPresetChoicesPresent": true
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.10",
+        "archive": "private/local-wecom-private-analysis-1.20.10-windows-x64.zip",
+        "sha256": "cf677f50c6477f7236ea59d028b14bd2b6d82fd553e95be84f96b7e34ba49fed",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true,
+        "compiledPresetChoicesPresent": true
+      }
+    ],
+    "syntheticDataOnly": true,
+    "realAccountValidation": false,
+    "originalFailureComputer": false,
+    "nativeWindowValidation": "source Tk tests only"
+  },
+  "presets": [
+    "今天",
+    "昨天",
+    "近7天",
+    "近30天",
+    "本周",
+    "上周",
+    "本月",
+    "上月",
+    "自定义"
+  ],
+  "calendarRules": {
+    "timezone": "Asia/Shanghai",
+    "recentDaysIncludeToday": true,
+    "weekStartsOn": "Monday",
+    "currentWeekAndMonthEndAtToday": true,
+    "presetClearsClockFields": true,
+    "manualEditSwitchesToCustom": true,
+    "customSelectionPreservesInput": true
+  },
+  "scope": "UI calendar presets only; existing period read, review, report and persistent format contracts unchanged",
+  "notVerified": [
+    "real account data",
+    "original failure computer",
+    "WorkBuddy actual import and use",
+    "full regression suite"
+  ]
+}

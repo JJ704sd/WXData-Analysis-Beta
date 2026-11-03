@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "archive": "wecom-diagnostics-v69-20261026-210650.zip",
+  "archiveSHA256": "ee4058b3b0bd37d0d2c1acfee7fa44110fb05325b7c7f2e541a8664b286b5f16",
+  "crcValid": true,
+  "events": 1247,
+  "exceptions": 19,
+  "exceptionTypes": {
+    "PermissionError": 19
+  },
+  "windowsErrors": {
+    "5": 19
+  },
+  "operations": [
+    {
+      "operation": "parse",
+      "stage": "finalizing",
+      "errors": 2
+    },
+    {
+      "operation": "export",
+      "stage": "exporting",
+      "errors": 17
+    }
+  ],
+  "existingFix": "publish_directory bounded retry retained from v70",
+  "newIndependentExceptionTypeFound": false,
+  "originalFaultHostValidation": false,
+  "notes": [
+    "Only structured error metadata was reviewed; raw message text and account values are excluded.",
+    "v73 text-gap and Emotion fixes came from reproducible current-code fixtures, not new exceptions in this archive."
+  ]
+}

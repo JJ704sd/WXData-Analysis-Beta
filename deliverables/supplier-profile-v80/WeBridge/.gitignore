@@ -1,0 +1,16 @@
+.venv/
+.runtime/
+.secrets/
+build/
+__pycache__/
+*.pyc
+settings.local.json
+keys/
+snapshots/
+exports/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log

@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v77 / 1.51.11",
+    "private": "1.20.9",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "uniqueChecksPassed": 23,
+    "uniqueTestIds": [
+      "test_daily_distribution.StandaloneDistributionTests.test_tracked_single_files_match_the_maintained_generation",
+      "test_daily_reports.DailyReportTests.test_both_clients_combine_group_and_direct_without_account_mixing",
+      "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests",
+      "test_group_ui42.GroupCapabilities42Tests.test_capabilities_respect_requested_and_packaged_mode",
+      "test_period77.PeriodDialogTests.test_four_main_windows_keep_the_period_action_visible",
+      "test_period77.PeriodDialogTests.test_small_dialog_scrolls_and_submits_exact_ids_and_times",
+      "test_period77.PeriodTests.test_duplicate_exports_zero_messages_and_source_coverage_gap",
+      "test_period77.PeriodTests.test_exact_targets_boundaries_utc_and_unknown_time",
+      "test_period77.PeriodTests.test_followup_cannot_use_future_reply_and_nested_authors_are_preserved",
+      "test_period77.PeriodTests.test_four_actual_session_export_paths_and_cli_task",
+      "test_period77.PeriodTests.test_minute_and_second_endpoints_select_only_the_requested_period",
+      "test_period77.PeriodTests.test_precision_timezone_and_invalid_intervals",
+      "test_period77.PeriodTests.test_review_identity_mode_tamper_and_no_overwrite",
+      "test_private_chat_distribution.PrivateChatDistributionTests.test_builds_two_bound_allowlisted_packages_from_explicit_exes",
+      "test_runtime_identity.RuntimeIdentityTests.test_comments_and_docstrings_do_not_become_runtime_identity",
+      "test_runtime_identity.RuntimeIdentityTests.test_config_loading_patterns_and_explicit_test_demo_boundaries_are_allowed",
+      "test_runtime_identity.RuntimeIdentityTests.test_launcher_blocks_contaminated_source_during_preflight",
+      "test_runtime_identity.RuntimeIdentityTests.test_non_fixture_account_and_group_constants_are_also_blocked",
+      "test_runtime_identity.RuntimeIdentityTests.test_previous_smoke_account_guard_is_blocked_without_echoing_identity",
+      "test_runtime_identity.RuntimeIdentityTests.test_runtime_sources_have_no_embedded_account_identity",
+      "test_windows_hook_smoke.SourceBindingTests.test_different_account_directory_is_rejected",
+      "test_windows_hook_smoke.SourceBindingTests.test_missing_identity_or_non_database_source_is_rejected",
+      "test_windows_hook_smoke.SourceBindingTests.test_selected_account_is_not_pinned_to_the_smoke_fixture"
+    ],
+    "reports": {
+      "period77-final-source.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period77.PeriodTests",
+          "test_daily_distribution.StandaloneDistributionTests.test_tracked_single_files_match_the_maintained_generation",
+          "test_group_ui42.GroupCapabilities42Tests"
+        ],
+        "testsRun": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.09,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "period77-ui-final.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period77.PeriodDialogTests"
+        ],
+        "testsRun": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 9.02,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "period77-ui-bindings.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period77.PeriodDialogTests",
+          "test_runtime_identity",
+          "test_windows_hook_smoke.SourceBindingTests",
+          "test_daily_reports.DailyReportTests.test_both_clients_combine_group_and_direct_without_account_mixing"
+        ],
+        "testsRun": 11,
+        "failures": 0,
+        "errors": 1,
+        "skipped": 0,
+        "seconds": 1.88,
+        "ok": false,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": [
+          "test_period77.PeriodDialogTests.test_small_dialog_scrolls_and_submits_exact_ids_and_times"
+        ]
+      },
+      "period77-packaging.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_private_chat_distribution.PrivateChatDistributionTests.test_builds_two_bound_allowlisted_packages_from_explicit_exes",
+          "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests"
+        ],
+        "testsRun": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.79,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "period77-reading-final.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_period77.PeriodTests.test_followup_cannot_use_future_reply_and_nested_authors_are_preserved"
+        ],
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.13,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      }
+    },
+    "environmentRetry": "Initial sandboxed Tk initialization could not read init.tcl. The same UI test and the four-window check passed with Tcl/Tk desktop resources available. No product failure was waived.",
+    "finalReadingRefinement": "Forward titles and quote-envelope authors are retained in readable reports. The affected source test and all four rebuilt packaged EXE tasks passed."
+  },
+  "runtimeIdentity": {
+    "scannedFiles": 110,
+    "ok": true,
+    "issues": []
+  },
+  "compiledDelivery": {
+    "ok": true,
+    "release": "v77",
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.11",
+        "archive": "WeChat-Archive-Skill-1.51.11-Windows-x64.zip",
+        "sha256": "7adf2e48cf4c266b376c06502cac83bfa1d23cc05187225e8bed324ace13c818",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.11",
+        "archive": "WeCom-Archive-Skill-1.51.11-Windows-x64.zip",
+        "sha256": "83275490669ee6f6af37b716e0a7107a47c6294b2505ecc5656cc6649baa5715",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.9",
+        "archive": "private/local-wechat-private-analysis-1.20.9-windows-x64.zip",
+        "sha256": "b64b8ca6d228cf3b7027c040ccf6c089b0af365754c412ca59878fc1a8ba7391",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.9",
+        "archive": "private/local-wecom-private-analysis-1.20.9-windows-x64.zip",
+        "sha256": "515f7ca5b669f830aecbf5b09720b38ac87c2959451237db55ab51ee639d4f95",
+        "actualPackagedExeTask": true,
+        "emptyPythonPath": true,
+        "chineseAndSpacePaths": true,
+        "exactMinuteBoundary": true,
+        "unknownTimeSeparated": true,
+        "futureReplyExcluded": true,
+        "originalMessageAndReviewTrace": true,
+        "packagedGuidePresent": true
+      }
+    ],
+    "syntheticDataOnly": true,
+    "realAccountValidation": false,
+    "originalFailureComputer": false,
+    "nativeWindowValidation": "source Tk tests only"
+  },
+  "scope": {
+    "exactConversationIds": true,
+    "beijingDatesMinutesSeconds": true,
+    "reviewedExportsOnly": true,
+    "unknownTimeSeparate": true,
+    "boundedReplyEvidence": true,
+    "originalRowsRetained": true,
+    "automaticModelCall": false,
+    "noPersistentFormatMigration": true
+  },
+  "notVerified": [
+    "real account data",
+    "original failure computer",
+    "WorkBuddy import and execution",
+    "full regression suite",
+    "semantic model acceptance"
+  ]
+}

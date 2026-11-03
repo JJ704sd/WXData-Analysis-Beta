@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "syntheticOnly": true,
+  "realAccountTested": false,
+  "products": [
+    {
+      "client": "wechat",
+      "conversationMode": "group",
+      "ok": true,
+      "rows": 1,
+      "withoutSystemPython": true,
+      "unreviewedPreview": true
+    },
+    {
+      "client": "wechat",
+      "conversationMode": "direct",
+      "ok": true,
+      "rows": 3,
+      "withoutSystemPython": true,
+      "unreviewedPreview": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "group",
+      "ok": true,
+      "rows": 2,
+      "withoutSystemPython": true,
+      "unreviewedPreview": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "direct",
+      "ok": true,
+      "rows": 2,
+      "withoutSystemPython": true,
+      "unreviewedPreview": true
+    }
+  ]
+}

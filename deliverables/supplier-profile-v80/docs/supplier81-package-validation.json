@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-03T08:06:19.804281+00:00",
+  "ok": true,
+  "syntheticOnly": true,
+  "method": "unpack_each_windows_zip_and_run_its_supplier_analysis_json",
+  "realAccountTested": false,
+  "interactiveGuiTested": false,
+  "products": [
+    {
+      "client": "wechat",
+      "conversationMode": "group",
+      "version": "1.51.15",
+      "archive": "WeChat-Archive-Skill-1.51.15-Windows-x64.zip",
+      "sha256": "968eb25e25a82065010352122871d56d5318c02ed04d3231e2a91826f1df762d",
+      "ok": true,
+      "datedMessages": 3,
+      "attributedMessages": 1,
+      "undatedMessages": 1,
+      "sourceReviewAndEvidence": true,
+      "incorrectClientRejected": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "group",
+      "version": "1.51.15",
+      "archive": "WeCom-Archive-Skill-1.51.15-Windows-x64.zip",
+      "sha256": "56181a4df56946a26c11464afc28d6b5be3e4fd0ce61e9244bcb69ba2634a26b",
+      "ok": true,
+      "datedMessages": 3,
+      "attributedMessages": 1,
+      "undatedMessages": 1,
+      "sourceReviewAndEvidence": true,
+      "incorrectClientRejected": true
+    },
+    {
+      "client": "wechat",
+      "conversationMode": "direct",
+      "version": "1.20.13",
+      "archive": "private/local-wechat-private-analysis-1.20.13-windows-x64.zip",
+      "sha256": "15b85f2429e68245a7c96e3502e3f3b6ad0571628e532f1aa78f00112bca75c1",
+      "ok": true,
+      "datedMessages": 3,
+      "attributedMessages": 1,
+      "undatedMessages": 1,
+      "sourceReviewAndEvidence": true,
+      "incorrectClientRejected": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "direct",
+      "version": "1.20.13",
+      "archive": "private/local-wecom-private-analysis-1.20.13-windows-x64.zip",
+      "sha256": "6500c2d808bc90db85fd4840e2ec93dbfea73a5f78ae84b6af5cfbc59853a890",
+      "ok": true,
+      "datedMessages": 3,
+      "attributedMessages": 1,
+      "undatedMessages": 1,
+      "sourceReviewAndEvidence": true,
+      "incorrectClientRejected": true
+    }
+  ]
+}

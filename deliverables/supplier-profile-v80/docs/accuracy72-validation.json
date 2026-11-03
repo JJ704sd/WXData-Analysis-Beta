@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v72 / 1.51.6",
+    "private": "1.20.4",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "evidence": "WeBridge/.runtime/accuracy72-checks.json",
+    "unittest": {
+      "testsRun": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "fourCombinationReviewExportSubcases": 4,
+      "subcasesBelongToOneTest": true
+    },
+    "runtimeIdentity": {
+      "ok": true,
+      "scannedFiles": 107
+    }
+  },
+  "compiledBinaryChecks": {
+    "evidence": "WeBridge/.runtime/accuracy72-compiled.json",
+    "archivesBuilt": 4,
+    "zipIntegrity": true,
+    "decompressedExe": {
+      "nativeWindowCreated": true,
+      "xlsxNoPhoneticPollution": true,
+      "docxHyperlinkTargetsPreserved": true,
+      "sourceAndOriginalBytesPreserved": true,
+      "humanReviewStillRequired": true,
+      "pythonRemovedFromPath": true,
+      "chineseAndSpacePath": true
+    },
+    "usesSyntheticData": true
+  },
+  "boundaries": {
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false,
+    "remotePublication": false
+  }
+}

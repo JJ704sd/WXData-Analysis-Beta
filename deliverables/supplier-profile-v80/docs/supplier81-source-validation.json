@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "targets": [
+    "test_supplier_profile",
+    "test_period77.PeriodTests",
+    "test_four_release71.FourRelease71Tests",
+    "test_private_chat_distribution"
+  ],
+  "testsRun": 27,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 86.02,
+  "ok": true,
+  "usesSyntheticData": true,
+  "realAccountValidation": false,
+  "compiledBinaryValidation": false,
+  "python": "3.14.6",
+  "platform": "win32",
+  "failedTests": []
+}

@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v76 / 1.51.10",
+    "private": "1.20.8",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "reports": {
+      "fields76-checks.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_wecom_fields76",
+          "test_wecom_metadata75",
+          "test_wecom_links74",
+          "test_group_quote_schema51"
+        ],
+        "testsRun": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 4.53,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "fields76-final-checks.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_wecom_fields76"
+        ],
+        "testsRun": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.76,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "accuracy76-packaging-check.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests"
+        ],
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.21,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      }
+    },
+    "uniqueChecksPassed": 26,
+    "uniqueTestIds": [
+      "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests",
+      "test_group_quote_schema51.GroupQuoteSchema51Tests.test_legacy_quote_survives_review_and_export",
+      "test_group_quote_schema51.GroupQuoteSchema51Tests.test_message_key_quote_survives_review_and_export",
+      "test_wecom_fields76.WeComKnownField76IntegrationTests.test_group_and_direct_exports_keep_field_gaps_and_attachment_evidence",
+      "test_wecom_fields76.WeComKnownField76Tests.test_card_bad_url_does_not_create_link_but_good_title_survives",
+      "test_wecom_fields76.WeComKnownField76Tests.test_card_mappings_keep_valid_values_and_mark_bad_known_text",
+      "test_wecom_fields76.WeComKnownField76Tests.test_empty_known_card_fields_remain_optional",
+      "test_wecom_fields76.WeComKnownField76Tests.test_forward_title_and_source_name_failures_preserve_children",
+      "test_wecom_fields76.WeComKnownField76Tests.test_media_filename_failure_keeps_md5_and_media_object",
+      "test_wecom_fields76.WeComKnownField76Tests.test_valid_nested_quote_and_empty_name_keep_existing_metadata_contract",
+      "test_wecom_links74.WeComLinkGapTests.test_complete_link_in_same_message_is_preserved",
+      "test_wecom_links74.WeComLinkGapTests.test_duplicate_link_order_is_preserved",
+      "test_wecom_links74.WeComLinkGapTests.test_excluded_gap_span_is_checked_after_punctuation_trimming",
+      "test_wecom_links74.WeComLinkGapTests.test_forward_and_quote_links_keep_nested_gap_boundaries",
+      "test_wecom_links74.WeComLinkGapTests.test_invalid_utf8_text_block_keeps_gap",
+      "test_wecom_links74.WeComLinkGapTests.test_link_across_normal_text_runs_is_preserved",
+      "test_wecom_links74.WeComLinkGapTests.test_link_does_not_cross_invalid_utf8_gap",
+      "test_wecom_links74.WeComLinkGapTests.test_literal_gap_marker_is_not_treated_as_system_gap",
+      "test_wecom_links74.WeComLinkGapTests.test_punctuation_and_nested_url_parentheses_are_trimmed",
+      "test_wecom_links74.WeComLinkGapTests.test_unknown_text_block_keeps_gap_without_guessing_body",
+      "test_wecom_links74.WeComLinkGapTests.test_unresolved_mention_placeholder_is_a_link_gap",
+      "test_wecom_metadata75.WeComMetadata75IntegrationTests.test_group_and_direct_exports_keep_nested_metadata_gaps_and_source_bytes",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_complete_forward_and_valid_quote_keep_existing_metadata",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_forward_missing_source_fields_is_partial_without_inventing_zero",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_forward_single_missing_field_and_explicit_zero_are_distinguished",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_invalid_quote_schema_keeps_status_and_marks_unknown_source_fields"
+    ],
+    "totalGreenExecutions": 33,
+    "finalRefinement": {
+      "evidence": "WeBridge/.runtime/fields76-final-checks.json",
+      "note": "Known scalar fields retain the established first-value behavior. Kind 101 field 2 remains unmapped rather than being guessed as a filename; its existing MD5 schema check is preserved."
+    },
+    "redEvidence": {
+      "evidence": "WeBridge/.runtime/fields76-red.log",
+      "testsRun": 7,
+      "reportedFailureRecords": 14,
+      "note": "The initial run includes subcase failures and test-expectation corrections for quote resolution and the unmapped kind 101 filename field; 14 records are not a count of confirmed product defects."
+    },
+    "observedBeforeFix": {
+      "cardTitleAndDescription": "Nonempty invalid bytes became empty strings while parseStatus remained ok.",
+      "cardURL": "An invalid nonempty URL became empty while parseStatus remained ok.",
+      "mediaFilename": "An undecodable filename fell back to the media label while parseStatus remained ok.",
+      "forwardTitle": "An undecodable title fell back to the record label while both parseStatus and record status remained ok."
+    },
+    "runtimeIdentity": {
+      "ok": true,
+      "scannedFiles": 107,
+      "issues": []
+    },
+    "pythonSyntax": {
+      "ok": true,
+      "changedFiles": 4
+    },
+    "markdownLinks": {
+      "ok": true,
+      "checked": 68
+    }
+  },
+  "compiledBinaryValidation": true,
+  "packageValidation": true,
+  "compiledChecks": {
+    "schemaVersion": 1,
+    "date": "2026-10-28",
+    "ok": true,
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.10",
+        "archive": "WeChat-Archive-Skill-1.51.10-Windows-x64.zip",
+        "sha256": "6c9612d22709a4e76976de4c4ca4203c9a4d0a9a48ad603e2b63abc14eb5c856",
+        "desktopExeSha256": "10c0702b18515842ae3a9b04f9bfd74e1ced6ca1009de6a37d25ee303561dafa",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": false,
+        "wecomKnownTextFieldGaps": false,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.10",
+        "archive": "WeCom-Archive-Skill-1.51.10-Windows-x64.zip",
+        "sha256": "ca3d55e5a8810f45ce09c5880d8e566ed7f27049db9daf8593e916319321e987",
+        "desktopExeSha256": "10c0702b18515842ae3a9b04f9bfd74e1ced6ca1009de6a37d25ee303561dafa",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": true,
+        "wecomKnownTextFieldGaps": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.8",
+        "archive": "private/local-wechat-private-analysis-1.20.8-windows-x64.zip",
+        "sha256": "5f236cd14c0fc8fbba6ee2dfc31c9f87a09db3598788489ea64e70d281904cb4",
+        "desktopExeSha256": "10c0702b18515842ae3a9b04f9bfd74e1ced6ca1009de6a37d25ee303561dafa",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": false,
+        "wecomKnownTextFieldGaps": false,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.8",
+        "archive": "private/local-wecom-private-analysis-1.20.8-windows-x64.zip",
+        "sha256": "8626f1cd6e5c2aa6455da226930b2d801f7003a02b29758870603f641889b735",
+        "desktopExeSha256": "10c0702b18515842ae3a9b04f9bfd74e1ced6ca1009de6a37d25ee303561dafa",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": true,
+        "wecomKnownTextFieldGaps": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      }
+    ],
+    "usesSyntheticData": true,
+    "compiledBinaryValidation": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false
+  },
+  "validationBoundary": {
+    "usesSyntheticData": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false,
+    "badFieldTextRecovered": false,
+    "realMediaHitRateMeasured": false,
+    "note": "Strict decoding and original bytes remain unchanged. No new original-host diagnostics were supplied; these fixes do not establish recovery on the original fault computer."
+  },
+  "python": "3.14.6",
+  "platform": "win32"
+}

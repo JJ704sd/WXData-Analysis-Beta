@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "packages": [
+    {
+      "archive": "WeChat-Archive-Skill-1.51.2-Windows-x64.zip",
+      "sha256": "3ebeb4eadd807a2d826210bfe18ccdeccc3f82b5ddc0d2cb957e21c2f792246f",
+      "zipIntegrity": true
+    },
+    {
+      "archive": "WeCom-Archive-Skill-1.51.4-Windows-x64.zip",
+      "sha256": "cbc0f1175745202372ef0c122913c7c68c23792c6c6f8fedc6421f4eb066bf74",
+      "zipIntegrity": true
+    },
+    {
+      "archive": "WeChat-WeCom-Four-Archive-Delivery-v68-private1.20.2.zip",
+      "sha256": "bf544891d76cea2ccae106274d056dde649edb28862bfbd903afc542e7cc91fe",
+      "zipIntegrity": true
+    }
+  ],
+  "referencePackage": {
+    "archive": "wecom-chat-extractor-win.zip",
+    "sha256": "33b9d6800629dd251253a91dd045874204666923cbc6e4a5bb13f63a14db4e71",
+    "codeImported": false
+  },
+  "baselines": [
+    {
+      "client": "wechat",
+      "conversationMode": "group",
+      "version": "1.51.2",
+      "desktopRelease": "v68"
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "group",
+      "version": "1.51.4",
+      "desktopRelease": "v70"
+    },
+    {
+      "client": "wechat",
+      "conversationMode": "direct",
+      "version": "1.20.2",
+      "desktopRelease": "v68"
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "direct",
+      "version": "1.20.2",
+      "desktopRelease": "v68"
+    }
+  ]
+}

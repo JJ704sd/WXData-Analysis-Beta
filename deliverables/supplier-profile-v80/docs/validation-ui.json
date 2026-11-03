@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "targets": [
+    "test_group_scrolling68",
+    "test_private_chat_integration.PrivateIntegrationTests.test_gui_labels_preserve_contact_name_and_do_not_load_data",
+    "test_private_chat_integration.PrivateIntegrationTests.test_profile_review_starts_unchecked_and_cancel_does_not_save"
+  ],
+  "testsRun": 12,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 21.59,
+  "ok": true,
+  "usesSyntheticData": true,
+  "realAccountValidation": false,
+  "compiledBinaryValidation": false,
+  "python": "3.14.6",
+  "platform": "win32",
+  "failedTests": []
+}

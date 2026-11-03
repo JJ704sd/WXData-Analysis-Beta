@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "release": {
+    "group": "v75 / 1.51.9",
+    "private": "1.20.7",
+    "dailyReport": "1.4.0"
+  },
+  "sourceChecks": {
+    "reports": {
+      "controls75-checks.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_document_controls75",
+          "test_group_unicode52",
+          "test_offline_documents.DocumentExportTests.test_selected_export_includes_attachment_text_states_and_provenance"
+        ],
+        "testsRun": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 7.91,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "metadata75-checks.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_wecom_metadata75",
+          "test_wecom_archive.WeComArchiveTests.test_mentions_and_nested_forward_use_wecom_fields",
+          "test_group_quote_schema51.GroupQuoteSchema51Tests.test_legacy_quote_survives_review_and_export",
+          "test_group_quote_schema51.GroupQuoteSchema51Tests.test_message_key_quote_survives_review_and_export"
+        ],
+        "testsRun": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.31,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "accuracy75-final-checks.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_document_controls75.DocumentControls75Tests.test_normal_text_and_existing_office_pdf_extractors_remain_complete",
+          "test_wecom_metadata75",
+          "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests"
+        ],
+        "testsRun": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.26,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "controls75-legacy-control.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_offline_documents.DocumentExportTests.test_legacy_doc_and_ppt_extract_only_current_structured_text"
+        ],
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.45,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "accuracy75-original-control.json": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_document_controls75",
+          "test_group_unicode52",
+          "test_offline_documents"
+        ],
+        "testsRun": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 9.03,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      }
+    },
+    "uniqueChecksPassed": 18,
+    "uniqueTestIds": [
+      "test_document_controls75.DocumentControls75Tests.test_control_characters_are_escaped_and_layout_breaks_are_preserved",
+      "test_document_controls75.DocumentControls75Tests.test_control_only_text_is_not_reported_as_empty",
+      "test_document_controls75.DocumentControls75Tests.test_four_flows_keep_control_attachment_and_daily_gap",
+      "test_document_controls75.DocumentControls75Tests.test_normal_text_and_existing_office_pdf_extractors_remain_complete",
+      "test_four_release71.FourRelease71Tests.test_current_group_packages_keep_both_client_bindings_and_valid_digests",
+      "test_group_quote_schema51.GroupQuoteSchema51Tests.test_legacy_quote_survives_review_and_export",
+      "test_group_quote_schema51.GroupQuoteSchema51Tests.test_message_key_quote_survives_review_and_export",
+      "test_group_unicode52.GroupUnicode52Tests.test_malformed_pdf_survives_group_review_and_export",
+      "test_group_unicode52.GroupUnicode52Tests.test_valid_pdf_chinese_and_emoji_remain_complete",
+      "test_offline_documents.DocumentExportTests.test_encrypted_image_only_and_corrupt_files_keep_separate_states",
+      "test_offline_documents.DocumentExportTests.test_legacy_doc_and_ppt_extract_only_current_structured_text",
+      "test_offline_documents.DocumentExportTests.test_selected_export_includes_attachment_text_states_and_provenance",
+      "test_wecom_archive.WeComArchiveTests.test_mentions_and_nested_forward_use_wecom_fields",
+      "test_wecom_metadata75.WeComMetadata75IntegrationTests.test_group_and_direct_exports_keep_nested_metadata_gaps_and_source_bytes",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_complete_forward_and_valid_quote_keep_existing_metadata",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_forward_missing_source_fields_is_partial_without_inventing_zero",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_forward_single_missing_field_and_explicit_zero_are_distinguished",
+      "test_wecom_metadata75.WeComMetadata75Tests.test_invalid_quote_schema_keeps_status_and_marks_unknown_source_fields"
+    ],
+    "totalGreenExecutions": 32,
+    "redEvidence": {
+      "attachmentControls": {
+        "verifiedBehaviorFailures": 2,
+        "actualBeforeFix": [
+          "extracted instead of partial",
+          "no_text for control-only bytes"
+        ],
+        "testExpectationCorrection": "An initial normal-text assertion expected one newline instead of the existing paragraph separator; only the test expectation was corrected."
+      },
+      "wecomMetadata": {
+        "testsRun": 4,
+        "failures": 3,
+        "passed": 1,
+        "actualBeforeFix": "Missing source sender fields produced the string 0 instead of an unknown identity."
+      }
+    },
+    "legacyDocumentControl": {
+      "v74Baseline": {
+        "schemaVersion": 1,
+        "date": "2026-10-28",
+        "targets": [
+          "test_offline_documents.DocumentExportTests.test_legacy_doc_and_ppt_extract_only_current_structured_text"
+        ],
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.45,
+        "ok": true,
+        "usesSyntheticData": true,
+        "realAccountValidation": false,
+        "compiledBinaryValidation": false,
+        "python": "3.14.6",
+        "platform": "win32",
+        "failedTests": []
+      },
+      "currentIsolatedPass": true,
+      "originalNineTestCommandPass": true,
+      "earlierFailureCause": "An earlier extra run reported failed instead of partial for the DOC/PPT fixture without notices. The same command and isolated old/new controls now pass; no OLE parser fix or flaky-failure cause is claimed."
+    },
+    "runtimeIdentity": {
+      "ok": true,
+      "scannedFiles": 107,
+      "issues": []
+    },
+    "pythonSyntax": {
+      "ok": true,
+      "changedFiles": 6
+    },
+    "markdownLinks": {
+      "ok": true,
+      "checked": 62
+    }
+  },
+  "compiledBinaryValidation": true,
+  "packageValidation": true,
+  "compiledChecks": {
+    "schemaVersion": 1,
+    "date": "2026-10-28",
+    "ok": true,
+    "products": [
+      {
+        "client": "wechat",
+        "conversationMode": "group",
+        "version": "1.51.9",
+        "archive": "WeChat-Archive-Skill-1.51.9-Windows-x64.zip",
+        "sha256": "e5cc72ee0afd6716cbef0390ca5221c286015967337b71f9bae5637914f5fb8b",
+        "desktopExeSha256": "9be5da77ac2368b7dc82c45503cbba254e68fa4565ba75ac5f0b473c60319b11",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": false,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "group",
+        "version": "1.51.9",
+        "archive": "WeCom-Archive-Skill-1.51.9-Windows-x64.zip",
+        "sha256": "b055efc197593ac57e5f0e318e54d7ef6d3312c20ec072141d03bf2fcbfb8e90",
+        "desktopExeSha256": "9be5da77ac2368b7dc82c45503cbba254e68fa4565ba75ac5f0b473c60319b11",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      },
+      {
+        "client": "wechat",
+        "conversationMode": "direct",
+        "version": "1.20.7",
+        "archive": "private/local-wechat-private-analysis-1.20.7-windows-x64.zip",
+        "sha256": "2b468a88df4532b1c641a119cf93896a2925e02ae3dd6ab8075b4fee9d34edbe",
+        "desktopExeSha256": "9be5da77ac2368b7dc82c45503cbba254e68fa4565ba75ac5f0b473c60319b11",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": false,
+        "wecomTextGapAndVerifiedLinks": false,
+        "wecomTextGapAndEmotionFallback": false
+      },
+      {
+        "client": "wecom",
+        "conversationMode": "direct",
+        "version": "1.20.7",
+        "archive": "private/local-wecom-private-analysis-1.20.7-windows-x64.zip",
+        "sha256": "f5c9dde5f8de46a6186408d9a1addeba40f2b90f5e73d1cc0eb0c97809f6ebf0",
+        "desktopExeSha256": "9be5da77ac2368b7dc82c45503cbba254e68fa4565ba75ac5f0b473c60319b11",
+        "zipCRCAndFileDigests": true,
+        "nativeWindowCreated": true,
+        "packagedOfficeParsing": true,
+        "sourceAndOriginalBytesPreserved": true,
+        "humanReviewStillRequired": true,
+        "pythonRemovedFromPath": true,
+        "chineseAndSpacePath": true,
+        "perMessageReaderNotices": true,
+        "attachmentControlBoundaries": true,
+        "wecomNestedSourceMetadata": true,
+        "wecomTextGapAndVerifiedLinks": true,
+        "wecomTextGapAndEmotionFallback": true
+      }
+    ],
+    "usesSyntheticData": true,
+    "compiledBinaryValidation": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false
+  },
+  "validationBoundary": {
+    "usesSyntheticData": true,
+    "realAccountValidation": false,
+    "originalFaultHostValidation": false,
+    "hostSkillImportValidation": false,
+    "note": "The fixes use reproducible synthetic inputs. No new original-host diagnostic logs were supplied; the existing v69 log conclusions remain unchanged."
+  },
+  "python": "3.14.6",
+  "platform": "win32"
+}

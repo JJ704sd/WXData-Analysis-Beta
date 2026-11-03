@@ -1,0 +1,8 @@
+# Windows source runtime, matching the v68 distributed dependency versions.
+cryptography==46.0.7
+zstandard==0.25.0
+Pillow==12.3.0
+pypdf==6.16.1
+xlrd==2.0.2
+olefile==0.47
+msoffcrypto-tool==6.0.0

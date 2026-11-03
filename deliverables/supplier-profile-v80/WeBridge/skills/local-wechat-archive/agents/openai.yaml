@@ -1,0 +1,4 @@
+interface:
+  display_name: "本地微信聊天解析"
+  short_description: "打开个微或企微界面，多选群批量解析，逐群人工复核后导出三种格式；保留账号配置"
+  default_prompt: "使用 $local-wechat-archive 打开本地聊天解析界面，让我多选群聊、逐群保存人工复核，再一键导出所选群。"

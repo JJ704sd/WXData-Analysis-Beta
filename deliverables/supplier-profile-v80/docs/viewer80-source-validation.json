@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-02",
+  "targets": [
+    "test_chat_viewer_integration",
+    "test_chat_performance80",
+    "test_runtime_identity",
+    "test_windows_hook_smoke.SourceBindingTests"
+  ],
+  "testsRun": 19,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 14.67,
+  "ok": true,
+  "usesSyntheticData": true,
+  "realAccountValidation": false,
+  "compiledBinaryValidation": false,
+  "python": "3.14.6",
+  "platform": "win32",
+  "failedTests": []
+}
