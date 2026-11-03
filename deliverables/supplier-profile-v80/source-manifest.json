@@ -22,8 +22,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 15601,
-      "sha256": "707b8d84e8f9098ae16a4a27c238040ff72333f69df699adb71e24758eef20b1"
+      "bytes": 15766,
+      "sha256": "9d1b4b954cb103e9c04e786be32c661002498dcd9f42c953dbd194ddbfaf2065"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -1417,8 +1417,8 @@
     },
     {
       "path": "docs/supplier81-package-validation.json",
-      "bytes": 2028,
-      "sha256": "de2a5fb7fe41a3662ff3508e8ba7aac597080fffa91c3fc4459a34c23b37a864"
+      "bytes": 2170,
+      "sha256": "f028bbf8da9e8cb25de6747dc7b72bd528c6c69dffefb7e099076a05ba627a2f"
     },
     {
       "path": "docs/supplier81-source-validation.json",
@@ -1457,8 +1457,8 @@
     },
     {
       "path": "docs/供应商画像交接-v81.md",
-      "bytes": 3914,
-      "sha256": "de143253f4387dd0d7b7535b0cc6af62cc72a805010744c878b236005d8cd384"
+      "bytes": 4243,
+      "sha256": "551a877ee1d70faf821513a0dcac3d38fa666a5a6ef6136a6e00b2da4271f06f"
     },
     {
       "path": "poc/wechat_agent_poc/__init__.py",

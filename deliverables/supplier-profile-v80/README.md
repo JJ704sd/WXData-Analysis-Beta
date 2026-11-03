@@ -10,6 +10,8 @@ Windows 本地个微／企微聊天分析助手，提供群聊和私聊四类采
 
 在 Windows x64 上，按客户端和会话类型选择对应的包；也可在 [v81 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/chat-assistants-v81)查看全部附件。
 
+上轮本地预验证包与发布包同名但摘要不同；请使用发布页文件，并按[交接报告](docs/供应商画像交接-v81.md)中的摘要核对。
+
 | 客户端 | 群聊 | 私聊 |
 | --- | --- | --- |
 | 个微 | [下载个微群聊 1.51.15](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/WeChat-Archive-Skill-1.51.15-Windows-x64.zip) | [下载个微私聊 1.20.13](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/local-wechat-private-analysis-1.20.13-windows-x64.zip) |
