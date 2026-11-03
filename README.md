@@ -4,7 +4,7 @@ Windows 本地个微／企微聊天分析助手，提供群聊和私聊四类采
 
 当前版本：**群聊 v71／Skill 1.51.5，私聊 1.20.3，日报 1.8.0**。版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。原四类采集助手的基线和修复见 [开发更新说明](docs/development-update.md)；日报提供单文件源码、Windows 便携 EXE 和两个 Skill，见下方 [日报使用入口](#生成每日消息日报)。
 
-四类采集助手的新版 **群聊 v81／1.51.15、私聊 1.20.13** 已单独整理为 [供应商画像版源码与使用入口](deliverables/supplier-profile-v80/README.md)，包含聊天查看、时段分析及带原文依据的供应商画像材料。该副本基于 v80，其附带的日报为 1.4.0；继续使用本仓库根目录的日报 1.8.0。新版的功能、运行包和验证边界见 [交接报告](deliverables/supplier-profile-v80/docs/供应商画像交接-v81.md)。
+四类采集助手的新版 **群聊 v82／1.51.16、私聊 1.20.14** 已单独整理为 [供应商画像版源码与使用入口](deliverables/supplier-profile-v80/README.md)，包含聊天查看、时段分析及带原文依据的供应商画像材料。该副本基于 v80，其附带的日报为 1.4.0；继续使用本仓库根目录的日报 1.8.0。新版的功能、运行包和验证边界见 [交接报告](deliverables/supplier-profile-v80/docs/供应商画像交接-v82.md)。
 
 ## 从源码启动
 
