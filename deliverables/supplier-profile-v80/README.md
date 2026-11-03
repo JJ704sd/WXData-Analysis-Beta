@@ -2,20 +2,20 @@
 
 Windows 本地个微／企微聊天分析助手，提供群聊和私聊四类采集入口，以及两个消息日报脚本。读取用户选择的数据库副本，解析消息和附件，生成带出处的阅读材料，人工复核后导出 JSON、JSONL 和 Markdown。日报脚本将同一账号的已复核导出整理成每日概览、待跟进线索和可交互的 HTML；私聊还支持画像候选复核和版本管理。
 
-本源码副本在 v80 基线上新增**供应商画像材料**，版本为 **群聊 v81／Skill 1.51.15，私聊 1.20.13**；版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。先解析并人工复核导出，再通过“更多设置 → 供应商画像材料…”指定对象、时段和群成员，生成可回查的业务线索与画像草稿模板。操作和身份边界见 [供应商画像材料说明](WeBridge/docs/local-chat/供应商画像材料-v81.md)，接手事项见 [交接报告](docs/供应商画像交接-v81.md)。
+本源码副本在 v80 基线上新增**供应商画像材料**，版本为 **群聊 v82／Skill 1.51.16，私聊 1.20.14**；版本由 [chat_release.py](WeBridge/scripts/chat_release.py) 统一维护。先解析并人工复核导出，再通过“更多设置 → 供应商画像材料…”指定对象、时段和群成员，生成可回查的业务线索与画像草稿模板。操作和身份边界见 [供应商画像材料说明](WeBridge/docs/local-chat/供应商画像材料-v81.md)，接手事项见 [交接报告](docs/供应商画像交接-v82.md)。
 
 本副本附带的日报仍为 1.4.0；原 `WXData-Analysis-Beta` 工作区中的日报 1.8.0 独立保留。v76 企微文字字段修复见 [v76 说明](WeBridge/docs/local-chat/企微已知文字字段完整性修复-v76.md)，更早的附件、链接及媒体修复说明继续保留。
 
-## 下载 v81 Windows 包
+## 下载 v82 Windows 包
 
-在 Windows x64 上，按客户端和会话类型选择对应的包；也可在 [v81 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/chat-assistants-v81)查看全部附件。
+在 Windows x64 上，按客户端和会话类型选择对应的包；也可在 [v82 发布页](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/tag/chat-assistants-v82)查看全部附件。
 
-上轮本地预验证包与发布包同名但摘要不同；请使用发布页文件，并按[交接报告](docs/供应商画像交接-v81.md)中的摘要核对。
+v82 修正供应商画像流程中“下一步”的提示；请按[交接报告](docs/供应商画像交接-v82.md)中的摘要核对程序包。
 
 | 客户端 | 群聊 | 私聊 |
 | --- | --- | --- |
-| 个微 | [下载个微群聊 1.51.15](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/WeChat-Archive-Skill-1.51.15-Windows-x64.zip) | [下载个微私聊 1.20.13](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/local-wechat-private-analysis-1.20.13-windows-x64.zip) |
-| 企微 | [下载企微群聊 1.51.15](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/WeCom-Archive-Skill-1.51.15-Windows-x64.zip) | [下载企微私聊 1.20.13](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v81/local-wecom-private-analysis-1.20.13-windows-x64.zip) |
+| 个微 | [下载个微群聊 1.51.16](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v82/WeChat-Archive-Skill-1.51.16-Windows-x64.zip) | [下载个微私聊 1.20.14](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v82/local-wechat-private-analysis-1.20.14-windows-x64.zip) |
+| 企微 | [下载企微群聊 1.51.16](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v82/WeCom-Archive-Skill-1.51.16-Windows-x64.zip) | [下载企微私聊 1.20.14](https://github.com/JJ704sd/WXData-Analysis-Beta/releases/download/chat-assistants-v82/local-wecom-private-analysis-1.20.14-windows-x64.zip) |
 
 完整解压所选 ZIP，双击包内的 `Start.cmd`。四个包均内置运行环境和聊天查看器，无需另装 Python 或 pip 包。登录对应客户端后，在工具中确认账号、数据源、会话和日期，再开始解析；完成解析后可选择会话并点击 **打开聊天窗口**。查看预览后仍需人工复核，确认后才能正式导出。
 
@@ -35,10 +35,10 @@ uv pip install --python .venv\Scripts\python.exe -r WeBridge\requirements.txt
 
 | 助手 | 主要用途 | `--client` | `--conversation-mode` | 版本 |
 | --- | --- | --- | --- | --- |
-| 个微群聊 | 解析、复核和导出个人微信群聊 | `wechat` | `group` | 1.51.15 |
-| 企微群聊 | 解析、复核和导出企业微信群聊 | `wecom` | `group` | 1.51.15 |
-| 个微私聊 | 解析微信联系人私聊，准备画像材料 | `wechat` | `direct` | 1.20.13 |
-| 企微私聊 | 解析企业微信私聊，准备画像材料 | `wecom` | `direct` | 1.20.13 |
+| 个微群聊 | 解析、复核和导出个人微信群聊 | `wechat` | `group` | 1.51.16 |
+| 企微群聊 | 解析、复核和导出企业微信群聊 | `wecom` | `group` | 1.51.16 |
+| 个微私聊 | 解析微信联系人私聊，准备画像材料 | `wechat` | `direct` | 1.20.14 |
+| 企微私聊 | 解析企业微信私聊，准备画像材料 | `wecom` | `direct` | 1.20.14 |
 
 已允许执行本地 PowerShell 脚本时，也可运行 `./start-assistant.ps1 -Client wecom -ConversationMode direct`；它优先使用仓库内 `.venv`。添加 `-Capabilities` 只查询版本，不读取账号或创建配置。
 
@@ -127,7 +127,7 @@ uv pip install --python .venv\Scripts\python.exe -r WeBridge\scripts\requirement
 & .\WeBridge\scripts\build_all_chat.ps1 -Python "$PWD\.venv\Scripts\python.exe"
 ```
 
-默认输出为 `WeBridge/build/v81/packages/`，四类包的版本、客户端、模式、ZIP 完整性及文件摘要校验通过后生成 `release-matrix.json`。旧 EXE 或不匹配的版本会在打包前被拒绝；已有构建目录不会被覆盖。更新版本时只改 `chat_release.py`，再运行 `sync_chat_release.py` 同步 Skill 元数据。源码文件清单可用 `python WeBridge/scripts/sync_source_manifest.py` 检查；新增文件须在更新时通过 `--add` 明确加入。详见 [维护与构建](docs/maintenance.md)。
+默认输出为 `WeBridge/build/v82/packages/`，四类包的版本、客户端、模式、ZIP 完整性及文件摘要校验通过后生成 `release-matrix.json`。旧 EXE 或不匹配的版本会在打包前被拒绝；已有构建目录不会被覆盖。更新版本时只改 `chat_release.py`，再运行 `sync_chat_release.py` 同步 Skill 元数据。源码文件清单可用 `python WeBridge/scripts/sync_source_manifest.py` 检查；新增文件须在更新时通过 `--add` 明确加入。详见 [维护与构建](docs/maintenance.md)。
 
 ## 源码入口
 

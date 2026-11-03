@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "targets": [
+    "test_runtime_identity",
+    "test_windows_hook_smoke.SourceBindingTests",
+    "test_supplier_profile.SupplierDialogTests.test_supplier_period_button_names_the_actual_next_step",
+    "test_period_presets78.PeriodPresetTests.test_native_preset_selection_keeps_custom_edits_and_small_window_usable"
+  ],
+  "testsRun": 11,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 5.75,
+  "ok": true,
+  "usesSyntheticData": true,
+  "realAccountValidation": false,
+  "compiledBinaryValidation": false,
+  "python": "3.14.6",
+  "platform": "win32",
+  "failedTests": []
+}

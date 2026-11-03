@@ -1,9 +1,9 @@
 """Single version source for archive products and local daily-report scripts."""
 import json
 
-GROUP_RELEASE = 'v81'
-GROUP_VERSION = '1.51.15'
-PRIVATE_VERSION = '1.20.13'
+GROUP_RELEASE = 'v82'
+GROUP_VERSION = '1.51.16'
+PRIVATE_VERSION = '1.20.14'
 DAILY_REPORT_VERSION = '1.4.0'
 
 

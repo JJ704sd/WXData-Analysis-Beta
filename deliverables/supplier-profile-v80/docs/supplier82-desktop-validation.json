@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-03T09:41:15.452456+00:00",
+  "ok": true,
+  "syntheticOnly": true,
+  "method": "each_unpacked_exe_drives_real_tk_widgets_with_isolated_reviewed_synthetic_profile",
+  "realAccountTested": false,
+  "nativeFolderPickerTested": false,
+  "browserLaunchTested": false,
+  "products": [
+    {
+      "client": "wechat",
+      "conversationMode": "group",
+      "version": "1.51.16",
+      "archive": "WeChat-Archive-Skill-1.51.16-Windows-x64.zip",
+      "sha256": "e4e9784e0c8617924b485b9c965f5ce7c295f85bcd0f0f94ab9428e7ed34b750",
+      "ok": true,
+      "exeSha256": "bcb5e1ed8dff51f0b2e7f94720145eae0870d04f9d796cd3d0b7a75e36ea3bc6",
+      "steps": [
+        "period",
+        "supplier",
+        "speaker"
+      ],
+      "selectedRelation": "selected_group_speaker",
+      "attributedMessages": 3,
+      "quoteReviewAndLine": true,
+      "reportManifestVerified": true,
+      "nativeFolderPickerStubbed": true,
+      "browserLaunchStubbed": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "group",
+      "version": "1.51.16",
+      "archive": "WeCom-Archive-Skill-1.51.16-Windows-x64.zip",
+      "sha256": "dc966177dac4d88e70c8b212de55eb529c66b611e0f8c31aaec4e8246a20f619",
+      "ok": true,
+      "exeSha256": "bcb5e1ed8dff51f0b2e7f94720145eae0870d04f9d796cd3d0b7a75e36ea3bc6",
+      "steps": [
+        "period",
+        "supplier",
+        "speaker"
+      ],
+      "selectedRelation": "selected_group_speaker",
+      "attributedMessages": 1,
+      "quoteReviewAndLine": true,
+      "reportManifestVerified": true,
+      "nativeFolderPickerStubbed": true,
+      "browserLaunchStubbed": true
+    },
+    {
+      "client": "wechat",
+      "conversationMode": "direct",
+      "version": "1.20.14",
+      "archive": "private/local-wechat-private-analysis-1.20.14-windows-x64.zip",
+      "sha256": "08fe4281b2ff41d0d495e09d213609a53edf251729d32abd0dde3d107d93f411",
+      "ok": true,
+      "exeSha256": "bcb5e1ed8dff51f0b2e7f94720145eae0870d04f9d796cd3d0b7a75e36ea3bc6",
+      "steps": [
+        "period",
+        "supplier"
+      ],
+      "selectedRelation": "selected_direct_peer",
+      "attributedMessages": 4,
+      "quoteReviewAndLine": true,
+      "reportManifestVerified": true,
+      "nativeFolderPickerStubbed": true,
+      "browserLaunchStubbed": true
+    },
+    {
+      "client": "wecom",
+      "conversationMode": "direct",
+      "version": "1.20.14",
+      "archive": "private/local-wecom-private-analysis-1.20.14-windows-x64.zip",
+      "sha256": "210c41bbe7b0889db05003bd096051a509b016b7e7ac0c5cd441b0dedcb9edb9",
+      "ok": true,
+      "exeSha256": "bcb5e1ed8dff51f0b2e7f94720145eae0870d04f9d796cd3d0b7a75e36ea3bc6",
+      "steps": [
+        "period",
+        "supplier"
+      ],
+      "selectedRelation": "selected_direct_peer",
+      "attributedMessages": 5,
+      "quoteReviewAndLine": true,
+      "reportManifestVerified": true,
+      "nativeFolderPickerStubbed": true,
+      "browserLaunchStubbed": true
+    }
+  ]
+}

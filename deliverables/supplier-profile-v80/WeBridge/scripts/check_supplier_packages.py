@@ -16,6 +16,7 @@ for path in (PROJECT / 'web_mvp', PROJECT / 'scripts', PROJECT.parent / 'poc'):
 
 from test_daily_reports import formal_export, message
 from test_supplier_profile import direct_export
+from chat_release import GROUP_RELEASE
 
 
 def run_exe(exe, args, env):
@@ -95,7 +96,7 @@ def check_product(base, product, temporary):
     report = json.loads((temporary / 'report/report.json').read_text(encoding='utf-8'))
     rows = [json.loads(line) for line in (temporary / 'report/evidence.jsonl').read_text(encoding='utf-8').splitlines()]
     by_id = {row['messageId']: row for row in rows}
-    if (not result['ok'] or report['version'] != 'v81' or report['overview']['datedMessages'] != 3
+    if (not result['ok'] or report['version'] != GROUP_RELEASE or report['overview']['datedMessages'] != 3
             or report['overview']['attributedMessages'] != 1 or report['overview']['undatedMessages'] != 1
             or by_id['supplier']['supplierRelation'] != relation
             or by_id['other']['supplierRelation'] in {'selected_group_speaker', 'selected_direct_peer'}):

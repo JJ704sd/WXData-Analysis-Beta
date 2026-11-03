@@ -31,7 +31,8 @@ def preset_dates(preset, *, today=None):
 
 
 class PeriodDialog(tk.Toplevel):
-    def __init__(self, parent, chats, *, selected=(), start='', end=''):
+    def __init__(self, parent, chats, *, selected=(), start='', end='',
+                 next_label='下一步：选择保存位置'):
         super().__init__(parent)
         self.result = None
         self.chats = chats
@@ -88,7 +89,7 @@ class PeriodDialog(tk.Toplevel):
         footer = ttk.Frame(self)
         footer.grid(row=4, column=0, sticky='ew', padx=16, pady=12)
         ttk.Button(footer, text='全选', command=lambda: self.tree.selection_set(self.tree.get_children())).pack(side='left')
-        ttk.Button(footer, text='下一步：选择保存位置', command=self.submit).pack(side='right')
+        ttk.Button(footer, text=next_label, command=self.submit).pack(side='right')
         ttk.Button(footer, text='取消', command=self.destroy).pack(side='right', padx=8)
         self.bind('<Escape>', lambda _event: self.destroy())
         self.grab_set()

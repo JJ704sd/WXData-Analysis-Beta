@@ -12,6 +12,7 @@ from unittest.mock import patch
 from offline_chat import ArchiveError
 from offline_supplier import build_supplier_report, load_materials, speaker_choices
 from test_daily_reports import formal_export, message
+from chat_release import GROUP_RELEASE
 
 
 def direct_export(base, name, rows, *, peer='synthetic-peer', **options):
@@ -43,6 +44,20 @@ class SupplierProfileTests(unittest.TestCase):
         rows = [json.loads(line) for line in (folder / 'evidence.jsonl').read_text(encoding='utf-8').splitlines()]
         return folder, report, rows
 
+    def test_desktop_check_rejects_a_profile_outside_its_isolated_task_folder(self):
+        from local_chat_app import main
+        task_dir = self.base / 'task'
+        task_dir.mkdir()
+        task = task_dir / 'synthetic.json'
+        task.write_text(json.dumps({'client': 'wechat', 'mode': 'group',
+                                    'reports': str(task_dir / 'reports')}), encoding='utf-8')
+        receipt = task_dir / 'receipt.json'
+        with self.assertRaisesRegex(ValueError, 'isolated task folder'):
+            main(['--client', 'wechat', '--conversation-mode', 'group',
+                  '--data-dir', str(self.base / 'outside-profile'),
+                  '--check-supplier-desktop', str(task), '--result-json', str(receipt)])
+        self.assertFalse(receipt.exists())
+
     def test_mixed_conversations_only_attribute_explicit_peer_and_selected_group_speaker(self):
         direct = direct_export(self.base, 'direct', [
             message('d1', '报价是 30 元 <script>alert(1)</script>'),
@@ -63,7 +78,7 @@ class SupplierProfileTests(unittest.TestCase):
         self.assertEqual(report['overview']['datedMessages'], 8)
         self.assertEqual(report['overview']['attributedMessages'], 4)
         self.assertEqual(report['overview']['undatedMessages'], 1)
-        self.assertEqual(report['version'], 'v81')
+        self.assertEqual(report['version'], GROUP_RELEASE)
         self.assertEqual(by_id['d1']['supplierRelation'], 'selected_direct_peer')
         self.assertEqual(by_id['d2']['supplierRelation'], 'direct_context')
         self.assertEqual(by_id['d3']['supplierRelation'], 'identity_unknown')
@@ -170,8 +185,8 @@ class SupplierProfileTests(unittest.TestCase):
         self.assertEqual(main(args + [str(receipt)]), 0)
         self.assertEqual(json.loads(receipt.read_text(encoding='utf-8'))['overview']['attributedMessages'], 2)
         report = json.loads((self.base / 'desktop-output/report.json').read_text(encoding='utf-8'))
-        self.assertEqual(report['version'], 'v81')
-        self.assertEqual(json.loads((self.base / 'desktop-output/manifest.json').read_text(encoding='utf-8'))['version'], 'v81')
+        self.assertEqual(report['version'], GROUP_RELEASE)
+        self.assertEqual(json.loads((self.base / 'desktop-output/manifest.json').read_text(encoding='utf-8'))['version'], GROUP_RELEASE)
         with self.assertRaises(ArchiveError):
             main(args + [str(direct / 'should-not-exist.json')])
         self.assertFalse((direct / 'should-not-exist.json').exists())
@@ -208,6 +223,41 @@ class SupplierProfileTests(unittest.TestCase):
 
 
 class SupplierDialogTests(unittest.TestCase):
+    def test_supplier_period_button_names_the_actual_next_step(self):
+        import tkinter as tk
+        from local_chat_app import ChatApp
+        from offline_desktop import DesktopSession
+        from offline_period_ui import PeriodDialog
+        with tempfile.TemporaryDirectory(prefix='synthetic-supplier-label-') as temporary:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                session = DesktopSession(Path(temporary), client='wechat', conversation_mode='group')
+                session.review_status = lambda _chat: '已导出'
+                app = ChatApp(root, session)
+                app.groups = [{'id': 'synthetic-group', 'name': '合成群'}]
+                app.selected_chats = {'synthetic-group'}
+                observed = []
+
+                def inspect():
+                    dialog = next(window for window in root.winfo_children() if isinstance(window, PeriodDialog))
+                    def collect(widget):
+                        if widget.winfo_class() == 'TButton':
+                            observed.append(widget.cget('text'))
+                        for child in widget.winfo_children():
+                            collect(child)
+                    collect(dialog)
+                    dialog.destroy()
+                root.after(30, inspect)
+                app.open_supplier_analysis()
+                self.assertIn('下一步：填写供应商标识', observed)
+            finally:
+                if 'app' in locals():
+                    app.progress.stop()
+                for token in root.tk.splitlist(root.tk.eval('after info')):
+                    root.tk.call('after', 'cancel', token)
+                root.destroy()
+
     def test_all_four_main_windows_offer_supplier_action(self):
         import tkinter as tk
         from local_chat_app import ChatApp

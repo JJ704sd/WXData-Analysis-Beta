@@ -24,7 +24,7 @@ def run():
     except Exception as failure:
         if path() is None:begin(None,'startup')
         error('fatal_startup_error',type(failure),failure.__traceback__)
-        if not any(flag in sys.argv for flag in ('--task-json', '--launch-desktop-json', '--period-analysis-json', '--supplier-analysis-json')):
+        if not any(flag in sys.argv for flag in ('--task-json', '--launch-desktop-json', '--period-analysis-json', '--supplier-analysis-json', '--check-supplier-desktop')):
             import ctypes
             detail=str(failure) if isinstance(failure,ClientBindingError) else '程序未能启动，错误类型：'+type(failure).__name__+'。'
             ctypes.windll.user32.MessageBoxW(None,detail+'\n\n诊断日志：'+str(path() or '日志目录不可写')+'\n\n请保留此提示并反馈日志；不要据此判断账号或密钥错误。','本地聊天解析：启动失败',0x10)

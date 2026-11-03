@@ -1133,7 +1133,8 @@ class ChatApp:
             messagebox.showinfo('先准备分析材料', '请先解析并人工复核导出供应商相关会话。', parent=self.root)
             return
         dialog = PeriodDialog(self.root, chats, selected=self.selected_chats or {self.active_chat},
-                              start=self.start_date.get().strip(), end=self.end_date.get().strip())
+                              start=self.start_date.get().strip(), end=self.end_date.get().strip(),
+                              next_label='下一步：填写供应商标识')
         self.root.wait_window(dialog)
         if not dialog.result or self.closing:
             return
@@ -3146,9 +3147,16 @@ def main(argv=None):
     parser.add_argument('--check-launch', type=Path, help=argparse.SUPPRESS)
     parser.add_argument('--check-export-chat', help=argparse.SUPPRESS)
     parser.add_argument('--check-viewer', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--check-supplier-desktop', type=Path, help=argparse.SUPPRESS)
     parser.add_argument('--diagnose-accounts', type=Path, help='只读检查客户端进程与数据库归属，输出脱敏 JSON')
     parser.add_argument('--scan-root', action='append', help='本次账号发现根目录，可重复指定；不改已保存配置')
     args = parser.parse_args(argv)
+    if args.check_supplier_desktop and (not args.data_dir or not args.result_json or args.capabilities
+            or args.task_json or args.period_analysis_json or args.supplier_analysis_json or args.launch_desktop_json
+            or args.open_chat or args.open_chat_name or args.open_result_json or args.check_launch
+            or args.check_export_chat or args.check_viewer or args.export_diagnostics or args.diagnose_accounts
+            or args.workbench or args.scan_root):
+        parser.error('--check-supplier-desktop 需要独立的 --data-dir 和 --result-json。')
     if args.check_viewer and not (args.check_launch and args.check_export_chat):
         parser.error('--check-viewer 需要 --check-launch 和 --check-export-chat。')
     if args.period_analysis_json and (not args.result_json or args.capabilities or args.task_json or args.supplier_analysis_json or args.launch_desktop_json
@@ -3195,6 +3203,10 @@ def main(argv=None):
             print(json.dumps(value))
         return 0
     directory = args.data_dir or default_directory(args.client)
+    if args.check_supplier_desktop:
+        from offline_supplier_desktop_check import run_check
+        return run_check(args.check_supplier_desktop, args.result_json, directory,
+                         args.client, args.conversation_mode, ChatApp)
     if args.period_analysis_json:
         from offline_period import run_file
         return run_file(args.period_analysis_json, args.result_json, client=args.client,
